@@ -1,6 +1,6 @@
 // api/tts.js - Vercel Serverless Function for Edge TTS (Free Cloud Hosting)
 
-import { MsEdgeTTS, OUTPUT_FORMAT } from 'ms-edge-tts';
+import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
