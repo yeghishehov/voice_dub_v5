@@ -1,0 +1,9 @@
+{
+  "name": "voice-dub-v5",
+  "version": "5.0.0",
+  "description": "Client-side Web Audio & AI Video Dubbing Application",
+  "type": "module",
+  "dependencies": {
+    "ms-edge-tts": "^1.4.3"
+  }
+}
