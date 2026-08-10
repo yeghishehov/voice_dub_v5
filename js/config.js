@@ -10,6 +10,10 @@ export const CONFIG = {
             "Мужской (Dmitry)":   "ru-RU-DmitryNeural",
             "Женский (Svetlana)": "ru-RU-SvetlanaNeural",
         },
+        "Английский": {
+            "Мужской (Guy)":      "en-US-GuyNeural",
+            "Женский (Jenny)":    "en-US-JennyNeural",
+        },
         "Персидский": {
             "Мужской (Farid)":   "fa-IR-FaridNeural",
             "Женский (Dilara)":  "fa-IR-DilaraNeural",
@@ -26,6 +30,7 @@ export const CONFIG = {
 
     LANG_CODES: {
         "Русский":    "ru",
+        "Английский": "en",
         "Персидский": "fa",
         "Испанский":  "es",
         "Египетский": "ar",
@@ -33,6 +38,7 @@ export const CONFIG = {
 
     LANG_NAMES: {
         "Русский":    "Russian",
+        "Английский": "English",
         "Персидский": "Persian (Farsi)",
         "Испанский":  "Spanish",
         "Египетский": "Egyptian Arabic (Masri dialect)",
