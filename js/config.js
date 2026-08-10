@@ -1,7 +1,7 @@
 // VOICE_DUB_V5 Config & Constants
 
 export const CONFIG = {
-    DEFAULT_API_KEY: "AIzaSyA_FTP8jkQtSKfmlO9r-qPltYu1nRZp2h0",
+    DEFAULT_API_KEY: "",
     MODEL_ID: "gemini-3.1-flash-lite", // Matching VOICE_DUB_V4
 
     // Voice mappings (Edge TTS voices matching VOICE_DUB_V4)

@@ -251,8 +251,23 @@ class VoiceDubApp {
         }
     }
 
+    checkApiKey() {
+        const key = (this.state.apiKey || '').trim();
+        if (!key) {
+            alert('🔑 Пожалуйста, введите ваш Gemini API ключ в верхнем поле страницы!');
+            const input = document.getElementById('apiKeyInput');
+            if (input) {
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return false;
+        }
+        return true;
+    }
+
     async runTranscription() {
         if (!this.state.videoFile) return;
+        if (!this.checkApiKey()) return;
 
         const btn = document.getElementById('btnStartTranscription');
         btn.disabled = true;
@@ -317,6 +332,7 @@ class VoiceDubApp {
 
     async runTranslation() {
         if (!this.state.phrases || this.state.phrases.length === 0) return;
+        if (!this.checkApiKey()) return;
 
         const btn = document.getElementById('btnStartTranslation');
         btn.disabled = true;
