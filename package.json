@@ -4,6 +4,6 @@
   "description": "Client-side Web Audio & AI Video Dubbing Application",
   "type": "module",
   "dependencies": {
-    "msedge-tts": "^2.0.0"
+    "msedge-tts": "^2.0.7"
   }
 }
