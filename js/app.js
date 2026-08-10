@@ -6,6 +6,7 @@ import { Transcriber } from './transcription.js';
 import { Translator } from './translation.js';
 import { TTSManager, EdgeTTS } from './tts.js';
 import { VideoAssembler } from './videoAssembler.js';
+import { I18N } from './i18n.js';
 
 class VoiceDubApp {
     constructor() {
@@ -14,6 +15,7 @@ class VoiceDubApp {
             audioBuffer: null,
             phrases: [],
             apiKey: localStorage.getItem('gemini_api_key') || CONFIG.DEFAULT_API_KEY,
+            uiLang: localStorage.getItem('ui_lang') || 'en',
             currentStep: 1,
             mixedAudioBlob: null,
             mixedAudioUrl: null,
@@ -24,6 +26,7 @@ class VoiceDubApp {
         };
 
         this.initUI();
+        this.updateUiLanguage();
     }
 
     initUI() {
@@ -35,6 +38,15 @@ class VoiceDubApp {
             apiKeyInput.addEventListener('input', (e) => {
                 this.state.apiKey = e.target.value.trim();
                 localStorage.setItem('gemini_api_key', this.state.apiKey);
+            });
+        }
+
+        // Language switcher button
+        const langToggleBtn = document.getElementById('langToggleBtn');
+        if (langToggleBtn) {
+            langToggleBtn.addEventListener('click', () => {
+                const nextLang = this.state.uiLang === 'en' ? 'ru' : 'en';
+                this.setLanguage(nextLang);
             });
         }
 
@@ -251,10 +263,41 @@ class VoiceDubApp {
         }
     }
 
+    setLanguage(lang) {
+        this.state.uiLang = lang;
+        localStorage.setItem('ui_lang', lang);
+        this.updateUiLanguage();
+        this.renderPhrasesTable();
+    }
+
+    updateUiLanguage() {
+        const dict = I18N[this.state.uiLang] || I18N.en;
+
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (dict[key]) {
+                el.textContent = dict[key];
+            }
+        });
+
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (dict[key]) {
+                el.placeholder = dict[key];
+            }
+        });
+
+        const langToggleBtn = document.getElementById('langToggleBtn');
+        if (langToggleBtn) {
+            langToggleBtn.textContent = dict.langToggleBtn;
+        }
+    }
+
     checkApiKey() {
         const key = (this.state.apiKey || '').trim();
         if (!key) {
-            alert('🔑 Пожалуйста, введите ваш Gemini API ключ в верхнем поле страницы!');
+            const dict = I18N[this.state.uiLang] || I18N.en;
+            alert(dict.enterApiKeyAlert);
             const input = document.getElementById('apiKeyInput');
             if (input) {
                 input.focus();
@@ -651,9 +694,10 @@ class VoiceDubApp {
     }
 
     downloadDubbedAudio() {
+        const dict = I18N[this.state.uiLang] || I18N.en;
         const hasVoicedPhrases = this.state.phrases && this.state.phrases.some(p => p.audioBlob);
         if (!this.state.mixedAudioBlob || !hasVoicedPhrases) {
-            alert('Сначала выполните этап 4 (Озвучка) для генерации аудиофайлов фраз!');
+            alert(dict.missingAudioBlobAlert);
             return;
         }
 
@@ -667,17 +711,18 @@ class VoiceDubApp {
     }
 
     exportText(field, format) {
+        const dict = I18N[this.state.uiLang] || I18N.en;
         if (!this.state.phrases || this.state.phrases.length === 0) {
-            alert('Нет фраз для экспорта! Сначала выполните импорт или транскрибацию.');
+            alert(dict.noPhrasesAlert);
             return;
         }
 
         const available = this.state.phrases.filter(p => p[field] && p[field].trim().length > 0);
         if (available.length === 0) {
             if (field === 'sourceText') {
-                alert('Оригинальный текст отсутствует! Выполните этап 2 (Транскрибация) или импортируйте оригинальный текст на этапе 1.');
+                alert(dict.missingOrigTextAlert);
             } else {
-                alert('Переведенный текст отсутствует! Выполните этап 3 (Перевод) или импортируйте переведенный текст на этапе 1.');
+                alert(dict.missingTransTextAlert);
             }
             return;
         }
@@ -712,13 +757,14 @@ class VoiceDubApp {
     }
 
     async exportIndividualAudio() {
+        const dict = I18N[this.state.uiLang] || I18N.en;
         const voicedPhrases = this.state.phrases.filter(p => p.audioBlob);
         if (voicedPhrases.length === 0) {
-            alert('Сначала выполните этап 4 (Озвучка) для генерации аудиофайлов!');
+            alert(dict.missingIndividualAudioAlert);
             return;
         }
 
-        this.log(5, `📦 Скачивание ${voicedPhrases.length} аудиофайлов фраз...`, 'info');
+        this.log(5, `📦 Download ${voicedPhrases.length} phrase audio files...`, 'info');
         voicedPhrases.forEach((phrase, idx) => {
             setTimeout(() => {
                 const a = document.createElement('a');

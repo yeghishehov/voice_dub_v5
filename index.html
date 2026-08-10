@@ -16,13 +16,16 @@
     <header class="app-header">
         <div class="brand">
             <div class="brand-icon">🎙️</div>
-            <div class="brand-title">VOICE DUB</div>
-            <span class="brand-badge">v5 Frontend JS</span>
+            <div class="brand-title" data-i18n="appTitle">VOICE DUB V5</div>
+            <span class="brand-badge" data-i18n="appSubtitle">Client-side Web Audio & AI Video Dubbing</span>
         </div>
-        <div class="header-actions">
+        <div class="header-actions" style="display: flex; align-items: center; gap: 1rem;">
+            <button class="btn btn-secondary" id="langToggleBtn" style="padding: 0.4rem 0.85rem; font-weight: 600; font-size: 0.9rem;">
+                🌐 RU
+            </button>
             <div class="api-key-box">
-                <span style="font-size: 0.85rem; color: var(--text-muted);">🔑 Gemini API Key:</span>
-                <input type="password" id="apiKeyInput" placeholder="Вставьте ваш API Ключ">
+                <span style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="apiKeyLabel">Gemini API Key:</span>
+                <input type="password" id="apiKeyInput" placeholder="Paste your Gemini API key (AIzaSy...)" data-i18n-placeholder="apiKeyPlaceholder">
             </div>
         </div>
     </header>
@@ -31,40 +34,40 @@
     <main class="app-container">
 
         <!-- Stepper Navigation -->
-        <nav class="stepper-nav" aria-label="Этапы дубляжа">
+        <nav class="stepper-nav" aria-label="Stages">
             <div class="step-card active" data-step="1" id="stepNav1">
                 <div class="step-number">1</div>
                 <div class="step-info">
-                    <span class="step-title">Импорт</span>
-                    <span class="step-sub">Файлы & Текст</span>
+                    <span class="step-title" data-i18n="step1Title">1. Import</span>
+                    <span class="step-sub">Files & Text</span>
                 </div>
             </div>
             <div class="step-card" data-step="2" id="stepNav2">
                 <div class="step-number">2</div>
                 <div class="step-info">
-                    <span class="step-title">Транскрибация</span>
-                    <span class="step-sub">Извлечение речи</span>
+                    <span class="step-title" data-i18n="step2Title">2. Transcription</span>
+                    <span class="step-sub">Speech STT</span>
                 </div>
             </div>
             <div class="step-card" data-step="3" id="stepNav3">
                 <div class="step-number">3</div>
                 <div class="step-info">
-                    <span class="step-title">Перевод</span>
-                    <span class="step-sub">Перевод фраз</span>
+                    <span class="step-title" data-i18n="step3Title">3. Translation</span>
+                    <span class="step-sub">Translate script</span>
                 </div>
             </div>
             <div class="step-card" data-step="4" id="stepNav4">
                 <div class="step-number">4</div>
                 <div class="step-info">
-                    <span class="step-title">Озвучка</span>
-                    <span class="step-sub">Синтез Edge TTS</span>
+                    <span class="step-title" data-i18n="step4Title">4. Voiceover (TTS)</span>
+                    <span class="step-sub">Speech TTS</span>
                 </div>
             </div>
             <div class="step-card" data-step="5" id="stepNav5">
                 <div class="step-number">5</div>
                 <div class="step-info">
-                    <span class="step-title">Экспорт</span>
-                    <span class="step-sub">Аудио & Текст</span>
+                    <span class="step-title" data-i18n="step5Title">5. Export Hub</span>
+                    <span class="step-sub">Audio & Script</span>
                 </div>
             </div>
         </nav>
@@ -74,33 +77,33 @@
             <div class="panel-header">
                 <div class="panel-title-box">
                     <span style="font-size: 1.5rem;">📥</span>
-                    <h2 class="panel-title">Этап 1: Импорт данных</h2>
+                    <h2 class="panel-title" data-i18n="stage1Header">Stage 1: Import Video & Scripts</h2>
                 </div>
             </div>
 
             <!-- Upload Card -->
             <div class="upload-card" id="uploadCard">
                 <div class="upload-icon">📂</div>
-                <h3 class="upload-title">Импортируйте медиафайл или готовый текст/перевод</h3>
-                <p class="upload-desc">Загрузите видеофайл для обработки с нуля ИЛИ готовый текст/перевод для мгновенной озвучки</p>
+                <h3 class="upload-title" data-i18n="dropVideoTitle">Select or drag Video / Audio file</h3>
+                <p class="upload-desc" data-i18n="stage1Desc">Upload your video/audio file or directly import ready original/translated script files to skip steps.</p>
 
                 <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
                     <label for="videoFileInput" class="btn btn-primary" id="btnSelectFile"
-                        style="cursor: pointer; padding: 0.85rem 1.75rem; font-size: 1rem;">
-                        🎬 Выбрать видеофайл на компьютере
+                        style="cursor: pointer; padding: 0.85rem 1.75rem; font-size: 1rem;" data-i18n="dropVideoTitle">
+                        🎬 Select video file on computer
                     </label>
                     <input type="file" id="videoFileInput" accept="video/*,.mp4,.webm,.mov,.avi,.mkv,.m4v,.flv,.wmv,.ts"
                         style="display: none;">
 
                     <label for="origTextFileInput" class="btn btn-secondary" id="btnSelectOrigTextFile"
-                        style="cursor: pointer; padding: 0.85rem 1.75rem; font-size: 1rem;">
-                        📝 Импортировать оригинальный текст (.json / .txt)
+                        style="cursor: pointer; padding: 0.85rem 1.75rem; font-size: 1rem;" data-i18n="importOrigTextBtn">
+                        📝 Import Original Script (.json / .txt)
                     </label>
                     <input type="file" id="origTextFileInput" accept=".json,.txt,.csv" style="display: none;">
 
                     <label for="transTextFileInput" class="btn btn-emerald" id="btnSelectTransTextFile"
-                        style="cursor: pointer; padding: 0.85rem 1.75rem; font-size: 1rem;">
-                        🌐 Импортировать переведенный текст (.json / .txt)
+                        style="cursor: pointer; padding: 0.85rem 1.75rem; font-size: 1rem;" data-i18n="importTransTextBtn">
+                        🌐 Import Translated Script (.json / .txt)
                     </label>
                     <input type="file" id="transTextFileInput" accept=".json,.txt,.csv" style="display: none;">
                 </div>
@@ -116,19 +119,19 @@
                 </div>
                 <div class="specs-grid">
                     <div class="spec-item">
-                        <span class="spec-label">Имя файла</span>
+                        <span class="spec-label" data-i18n="specFile">File:</span>
                         <span class="spec-val" id="specFileName">-</span>
                     </div>
                     <div class="spec-item">
-                        <span class="spec-label">Длительность</span>
+                        <span class="spec-label" data-i18n="specDuration">Duration:</span>
                         <span class="spec-val" id="specDuration">-</span>
                     </div>
                     <div class="spec-item">
-                        <span class="spec-label">Разрешение</span>
+                        <span class="spec-label" data-i18n="specResolution">Resolution:</span>
                         <span class="spec-val" id="specResolution">-</span>
                     </div>
                     <div class="spec-item">
-                        <span class="spec-label">Размер файла</span>
+                        <span class="spec-label" data-i18n="specFormat">Format:</span>
                         <span class="spec-val" id="specFileSize">-</span>
                     </div>
                 </div>
@@ -137,8 +140,8 @@
             <div class="log-box" id="logBox1" style="display: none; margin-top: 1.25rem;"></div>
 
             <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
-                <button class="btn btn-primary" id="btnGoToStep2" disabled>
-                    Далее: Транскрибация ➡️
+                <button class="btn btn-primary" id="btnGoToStep2" disabled data-i18n="nextTranscriptionBtn">
+                    Next: Transcription ➡️
                 </button>
             </div>
         </section>
@@ -148,11 +151,11 @@
             <div class="panel-header">
                 <div class="panel-title-box">
                     <span style="font-size: 1.5rem;">✍️</span>
-                    <h2 class="panel-title">Этап 2: Транскрибация речи</h2>
+                    <h2 class="panel-title" data-i18n="stage2Header">Stage 2: Speech Transcription (Gemini Flash)</h2>
                 </div>
                 <div class="form-group"
                     style="margin-bottom: 0; flex-direction: row; align-items: center; gap: 0.75rem;">
-                    <label class="form-label" for="sourceLangSelect">Исходный язык:</label>
+                    <label class="form-label" for="sourceLangSelect" data-i18n="sourceLangLabel">Source Language:</label>
                     <select class="form-select" id="sourceLangSelect">
                         <option value="Армянский">Армянский</option>
                         <option value="Русский">Русский</option>
@@ -161,13 +164,12 @@
             </div>
 
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
-                Нажмите «Запустить транскрибацию» для автоматического извлечения речи с таймкодами через Gemini API. Вы
-                сможете вручную отредактировать любую фразу прямо в таблице.
+                Click "Start Transcription" to extract speech with timestamps via Gemini API. Edit any phrase in the table.
             </p>
 
             <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                <button class="btn btn-primary" id="btnStartTranscription">
-                    ⚡ Запустить транскрибацию (Gemini)
+                <button class="btn btn-primary" id="btnStartTranscription" data-i18n="startTranscriptionBtn">
+                    ⚡ Start Transcription (Gemini)
                 </button>
             </div>
 
@@ -178,13 +180,13 @@
                 <table class="phrases-table">
                     <thead>
                         <tr>
-                            <th style="width: 60px;">#</th>
-                            <th style="width: 110px;">Начало</th>
-                            <th style="width: 110px;">Конец</th>
-                            <th>Исходный текст (можно редактировать)</th>
-                            <th>Перевод (Этап 3)</th>
-                            <th class="col-voice" style="width: 170px; display: none;">Голос</th>
-                            <th style="width: 110px;">Аудио</th>
+                            <th style="width: 60px;" data-i18n="thNum">#</th>
+                            <th style="width: 110px;" data-i18n="thStart">Start</th>
+                            <th style="width: 110px;" data-i18n="thEnd">End</th>
+                            <th data-i18n="thSource">Original Text (Editable)</th>
+                            <th data-i18n="thTarget">Translation (Stage 3)</th>
+                            <th class="col-voice" style="width: 170px; display: none;" data-i18n="thVoice">Speaker Voice</th>
+                            <th style="width: 110px;" data-i18n="thAudio">Audio</th>
                         </tr>
                     </thead>
                     <tbody id="phrasesTableBody">
@@ -193,9 +195,9 @@
             </div>
 
             <div style="margin-top: 2rem; display: flex; justify-content: space-between;">
-                <button class="btn btn-secondary" id="btnBackToStep1">⬅️ Назад</button>
-                <button class="btn btn-primary" id="btnGoToStep3" disabled>
-                    Далее: Перевод ➡️
+                <button class="btn btn-secondary" id="btnBackToStep1" data-i18n="backBtn">⬅️ Back</button>
+                <button class="btn btn-primary" id="btnGoToStep3" disabled data-i18n="nextTranslationBtn">
+                    Next: Translation ➡️
                 </button>
             </div>
         </section>
@@ -205,11 +207,11 @@
             <div class="panel-header">
                 <div class="panel-title-box">
                     <span style="font-size: 1.5rem;">🌐</span>
-                    <h2 class="panel-title">Этап 3: Перевод на целевой язык</h2>
+                    <h2 class="panel-title" data-i18n="stage3Header">Stage 3: Translation to Target Language</h2>
                 </div>
                 <div class="form-group"
                     style="margin-bottom: 0; flex-direction: row; align-items: center; gap: 0.75rem;">
-                    <label class="form-label" for="targetLangSelect">Целевой язык:</label>
+                    <label class="form-label" for="targetLangSelect" data-i18n="targetLangLabel">Target Language:</label>
                     <select class="form-select" id="targetLangSelect">
                         <option value="Русский">Русский</option>
                         <option value="Английский">Английский</option>
@@ -221,22 +223,21 @@
             </div>
 
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
-                Перевод выполняется батчами через Gemini API. Текст перевода можно свободно корректировать в таблице
-                перед озвучкой.
+                Translation is performed in batches using Gemini API. Modify translation text in the table anytime.
             </p>
 
             <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                <button class="btn btn-primary" id="btnStartTranslation">
-                    🌐 Перевести фразы (Gemini)
+                <button class="btn btn-primary" id="btnStartTranslation" data-i18n="startTranslationBtn">
+                    🌐 Translate Script (Gemini)
                 </button>
             </div>
 
             <div class="log-box" id="logBox3" style="display: none;"></div>
 
             <div style="margin-top: 2rem; display: flex; justify-content: space-between;">
-                <button class="btn btn-secondary" id="btnBackToStep2">⬅️ Назад</button>
-                <button class="btn btn-primary" id="btnGoToStep4" disabled>
-                    Далее: Озвучка ➡️
+                <button class="btn btn-secondary" id="btnBackToStep2" data-i18n="backBtn">⬅️ Back</button>
+                <button class="btn btn-primary" id="btnGoToStep4" disabled data-i18n="nextVoiceoverBtn">
+                    Next: Voiceover ➡️
                 </button>
             </div>
         </section>
@@ -246,11 +247,11 @@
             <div class="panel-header">
                 <div class="panel-title-box">
                     <span style="font-size: 1.5rem;">🎙️</span>
-                    <h2 class="panel-title">Этап 4: Синтез речи (Edge TTS)</h2>
+                    <h2 class="panel-title" data-i18n="stage4Header">Stage 4: Speech Synthesis (Edge TTS)</h2>
                 </div>
                 <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                     <div class="form-group" style="margin-bottom: 0; flex-direction: row; align-items: center; gap: 0.5rem;">
-                        <label class="form-label" for="targetLangSelectStep4">Язык озвучки:</label>
+                        <label class="form-label" for="targetLangSelectStep4" data-i18n="ttsLangLabel">Voiceover Language:</label>
                         <select class="form-select" id="targetLangSelectStep4">
                             <option value="Русский">Русский</option>
                             <option value="Английский">Английский</option>
@@ -261,7 +262,7 @@
                     </div>
 
                     <div class="form-group" style="margin-bottom: 0; flex-direction: row; align-items: center; gap: 0.5rem;">
-                        <label class="form-label" for="voiceSelect">Голос диктора:</label>
+                        <label class="form-label" for="voiceSelect" data-i18n="defaultVoiceLabel">Default Speaker Voice:</label>
                         <select class="form-select" id="voiceSelect">
                             <!-- Populated dynamically based on target language -->
                         </select>
@@ -270,22 +271,21 @@
             </div>
 
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
-                Синтез речи происходит напрямую через естественные нейросети Microsoft Edge TTS. Вы сможете прослушать
-                каждую озвученную фразу в таблице.
+                Speech synthesis is powered directly by Microsoft Edge TTS neural voices. Preview each phrase in the table.
             </p>
 
             <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                <button class="btn btn-primary" id="btnStartTTS">
-                    🎙️ Синтезировать все фразы (Edge TTS)
+                <button class="btn btn-primary" id="btnStartTTS" data-i18n="startTTSBtn">
+                    🎙️ Synthesize All Phrases (Edge TTS)
                 </button>
             </div>
 
             <div class="log-box" id="logBox4" style="display: none;"></div>
 
             <div style="margin-top: 2rem; display: flex; justify-content: space-between;">
-                <button class="btn btn-secondary" id="btnBackToStep3">⬅️ Назад</button>
-                <button class="btn btn-primary" id="btnGoToStep5" disabled>
-                    Далее: Экспорт ➡️
+                <button class="btn btn-secondary" id="btnBackToStep3" data-i18n="backBtn">⬅️ Back</button>
+                <button class="btn btn-primary" id="btnGoToStep5" disabled data-i18n="nextExportBtn">
+                    Next: Export ➡️
                 </button>
             </div>
         </section>
@@ -295,12 +295,12 @@
             <div class="panel-header">
                 <div class="panel-title-box">
                     <span style="font-size: 1.5rem;">📤</span>
-                    <h2 class="panel-title">Этап 5: Центр экспорта</h2>
+                    <h2 class="panel-title" data-i18n="stage5Header">Stage 5: Export Hub</h2>
                 </div>
             </div>
 
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
-                Скачивайте любые готовые материалы вашего проекта в нужном формате.
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;" data-i18n="stage5Desc">
+                Download all project assets in your preferred format.
             </p>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
@@ -308,13 +308,13 @@
                 <div class="upload-card" style="text-align: left; align-items: flex-start; gap: 0.75rem; border-style: solid; padding: 1.5rem;">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                         <span style="font-size: 2rem;">🎵</span>
-                        <h4 style="font-size: 1.1rem; font-weight: 600;">Склеенное аудио (.wav)</h4>
+                        <h4 style="font-size: 1.1rem; font-weight: 600;" data-i18n="cardStitchedTitle">Stitched Audio (.wav)</h4>
                     </div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);">
-                        Единый аудиофайл дубляжа со скомпонованными фразами по таймкодам для CapCut.
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="cardStitchedDesc">
+                        Single dubbing audio track synced with timestamps for CapCut.
                     </p>
-                    <button class="btn btn-emerald" id="btnDownloadAudio" style="width: 100%; margin-top: auto;">
-                        🎵 Скачать аудиодорожку (.wav)
+                    <button class="btn btn-emerald" id="btnDownloadAudio" style="width: 100%; margin-top: auto;" data-i18n="downloadAudioBtn">
+                        🎵 Download Dubbed Audio (.wav)
                     </button>
                 </div>
 
@@ -322,10 +322,10 @@
                 <div class="upload-card" style="text-align: left; align-items: flex-start; gap: 0.75rem; border-style: solid; padding: 1.5rem;">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                         <span style="font-size: 2rem;">📝</span>
-                        <h4 style="font-size: 1.1rem; font-weight: 600;">Оригинальный текст</h4>
+                        <h4 style="font-size: 1.1rem; font-weight: 600;" data-i18n="cardOrigTitle">Original Text</h4>
                     </div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);">
-                        Транскрибированный текст оригинала с таймкодами.
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="cardOrigDesc">
+                        Subtitles / transcription of original speech.
                     </p>
                     <div style="display: flex; gap: 0.5rem; width: 100%; margin-top: auto;">
                         <button class="btn btn-secondary" id="btnExportOrigJson" style="flex: 1;">JSON</button>
@@ -337,10 +337,10 @@
                 <div class="upload-card" style="text-align: left; align-items: flex-start; gap: 0.75rem; border-style: solid; padding: 1.5rem;">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                         <span style="font-size: 2rem;">🌐</span>
-                        <h4 style="font-size: 1.1rem; font-weight: 600;">Переведенный текст</h4>
+                        <h4 style="font-size: 1.1rem; font-weight: 600;" data-i18n="cardTransTitle">Translated Text</h4>
                     </div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);">
-                        Перевод всех фраз на целевой язык с таймкодами.
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="cardTransDesc">
+                        Translated script with timestamps.
                     </p>
                     <div style="display: flex; gap: 0.5rem; width: 100%; margin-top: auto;">
                         <button class="btn btn-secondary" id="btnExportTransJson" style="flex: 1;">JSON</button>
@@ -352,13 +352,13 @@
                 <div class="upload-card" style="text-align: left; align-items: flex-start; gap: 0.75rem; border-style: solid; padding: 1.5rem;">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                         <span style="font-size: 2rem;">📦</span>
-                        <h4 style="font-size: 1.1rem; font-weight: 600;">Отдельные аудиофрагменты</h4>
+                        <h4 style="font-size: 1.1rem; font-weight: 600;" data-i18n="cardIndivTitle">Individual Audio Clips</h4>
                     </div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted);">
-                        Скачать каждую озвученную фразу отдельным файлом.
+                    <p style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="cardIndivDesc">
+                        Separate MP3 audio clips for each phrase.
                     </p>
-                    <button class="btn btn-secondary" id="btnExportIndividualAudio" style="width: 100%; margin-top: auto;">
-                        📦 Скачать файлы фраз
+                    <button class="btn btn-secondary" id="btnExportIndividualAudio" style="width: 100%; margin-top: auto;" data-i18n="exportIndivBtn">
+                        📦 Download Individual Audio (.mp3)
                     </button>
                 </div>
             </div>
