@@ -88,12 +88,13 @@ export class EdgeTTS {
 
                 // 2. Send SSML request
                 const escapedText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const langLocale = (voice && voice.includes('-')) ? voice.split('-').slice(0, 2).join('-') : 'en-US';
                 const ssml = 
                     `X-RequestId:${requestId}\r\n` +
                     `X-Timestamp:${dateStr}\r\n` +
                     `Content-Type:application/ssml+xml\r\n` +
                     `Path:ssml\r\n\r\n` +
-                    `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>` +
+                    `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${langLocale}'>` +
                     `<voice name='${voice}'><rate value='${rate}'>${escapedText}</rate></voice>` +
                     `</speak>`;
                 ws.send(ssml);
@@ -154,11 +155,12 @@ export class TTSManager {
         for (let i = 0; i < validPhrases.length; i++) {
             const phrase = validPhrases[i];
             const text = phrase.targetText.trim();
+            const voiceToUse = phrase.voice || voice;
 
-            progressCb(`🎙️ [${i + 1}/${total}] Edge TTS: "${text.substring(0, 40)}..."`);
+            progressCb(`🎙️ [${i + 1}/${total}] Edge TTS: "${text.substring(0, 40)}..." (${voiceToUse})`);
 
             try {
-                const mp3Blob = await EdgeTTS.synthesize(text, voice);
+                const mp3Blob = await EdgeTTS.synthesize(text, voiceToUse);
                 const audioUrl = URL.createObjectURL(mp3Blob);
                 
                 const durationSec = await this.getAudioDuration(audioUrl);
