@@ -19,7 +19,7 @@ export const I18N = {
         // Stage 1: Import
         stage1Header: "Stage 1: Import Video & Scripts",
         stage1Desc: "Upload your video/audio file or directly import ready original/translated script files to skip steps.",
-        dropVideoTitle: "Select or drag Video / Audio file",
+        dropVideoTitle: "Select Video / Audio file",
         dropVideoDesc: "MP4, WebM, MOV, AVI, MKV or MP3, WAV, M4A",
         importOrigTextBtn: "📝 Import Original Script",
         importTransTextBtn: "🌐 Import Translated Script",
@@ -102,7 +102,7 @@ export const I18N = {
         // Stage 1: Import
         stage1Header: "Этап 1: Импорт медиафайла и текстов",
         stage1Desc: "Загрузите исходное видео/аудио или сразу импортируйте готовый текст оригинала/перевода для пропуска этапов.",
-        dropVideoTitle: "Выберите или перетащите файл Видео / Аудио",
+        dropVideoTitle: "Выберите файл Видео / Аудио",
         dropVideoDesc: "MP4, WebM, MOV, AVI, MKV или MP3, WAV, M4A",
         importOrigTextBtn: "📝 Импортировать оригинальный текст",
         importTransTextBtn: "🌐 Импортировать переведенный текст",
