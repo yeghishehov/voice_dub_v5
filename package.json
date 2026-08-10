@@ -1,9 +1,0 @@
-{
-  "name": "voice-dub-v5",
-  "version": "5.0.0",
-  "description": "Client-side Web Audio & AI Video Dubbing Application",
-  "type": "module",
-  "dependencies": {
-    "msedge-tts": "^2.0.0"
-  }
-}
