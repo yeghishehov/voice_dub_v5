@@ -9,48 +9,23 @@ export class EdgeTTS {
      * @returns {Promise<Blob>}
      */
     static async synthesize(text, voice = "ru-RU-DmitryNeural", rate = "+0%") {
-        // Priority 1: Local server.py endpoint if running on localhost/127.0.0.1
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            try {
-                const res = await fetch('/api/tts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, voice, rate })
-                });
+        // Priority 1: Call /api/tts endpoint (works on Vercel Serverless Function & local server.py)
+        try {
+            const res = await fetch('/api/tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, voice, rate })
+            });
 
-                if (res.ok) {
-                    const blob = await res.blob();
-                    if (blob && blob.size > 0) return blob;
-                }
-            } catch (err) {
-                console.warn("Local /api/tts endpoint unavailable, trying public gateways...", err);
+            if (res.ok) {
+                const blob = await res.blob();
+                if (blob && blob.size > 0) return blob;
             }
+        } catch (err) {
+            console.warn("/api/tts endpoint unavailable, trying direct WebSocket...", err);
         }
 
-        // Priority 2: Try public Edge TTS CORS proxy gateways
-        const gateways = [
-            'https://edge-tts-cors-api.vercel.app/api/tts',
-            'https://edge-tts-api.vercel.app/api/tts'
-        ];
-
-        for (const gatewayUrl of gateways) {
-            try {
-                const res = await fetch(gatewayUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, voice, rate })
-                });
-
-                if (res.ok) {
-                    const blob = await res.blob();
-                    if (blob && blob.size > 0) return blob;
-                }
-            } catch (err) {
-                console.warn(`Gateway ${gatewayUrl} unavailable...`, err);
-            }
-        }
-
-        // Priority 3: Direct Client-Side Browser WebSocket fallback
+        // Priority 2: Direct Client-Side Browser WebSocket fallback
         return new Promise((resolve, reject) => {
             const TRUSTED_TOKEN = "6A5AA1D4EA5942B4195C714257E2E89A";
             const wsUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_TOKEN}`;
@@ -67,7 +42,7 @@ export class EdgeTTS {
             const requestId = this.generateGuid();
 
             const timeoutId = setTimeout(() => {
-                try { ws.close(); } catch (e) {}
+                try { ws.close(); } catch (e) { }
                 reject(new Error("Microsoft Edge TTS WebSocket timeout"));
             }, 12000);
 
@@ -75,7 +50,7 @@ export class EdgeTTS {
                 const dateStr = new Date().toString();
 
                 // 1. Send speech config
-                const speechConfig = 
+                const speechConfig =
                     `X-Timestamp:${dateStr}\r\n` +
                     `Content-Type:application/json; charset=utf-8\r\n` +
                     `Path:speech.config\r\n\r\n` +
@@ -97,7 +72,7 @@ export class EdgeTTS {
                 // 2. Send SSML request
                 const escapedText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const langLocale = (voice && voice.includes('-')) ? voice.split('-').slice(0, 2).join('-') : 'en-US';
-                const ssml = 
+                const ssml =
                     `X-RequestId:${requestId}\r\n` +
                     `X-Timestamp:${dateStr}\r\n` +
                     `Content-Type:application/ssml+xml\r\n` +
@@ -138,7 +113,7 @@ export class EdgeTTS {
     }
 
     static generateGuid() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
             const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
@@ -170,7 +145,7 @@ export class TTSManager {
             try {
                 const mp3Blob = await EdgeTTS.synthesize(text, voiceToUse);
                 const audioUrl = URL.createObjectURL(mp3Blob);
-                
+
                 const durationSec = await this.getAudioDuration(audioUrl);
 
                 phrase.audioBlob = mp3Blob;
