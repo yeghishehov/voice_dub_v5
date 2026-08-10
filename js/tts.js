@@ -9,7 +9,7 @@ export class EdgeTTS {
      * @returns {Promise<Blob>}
      */
     static async synthesize(text, voice = "ru-RU-DmitryNeural", rate = "+0%") {
-        // Priority 1: Try local server.py /api/tts endpoint if running locally
+        // Priority 1: Local server.py endpoint if running on localhost/127.0.0.1
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             try {
                 const res = await fetch('/api/tts', {
@@ -23,11 +23,34 @@ export class EdgeTTS {
                     if (blob && blob.size > 0) return blob;
                 }
             } catch (err) {
-                console.warn("Local /api/tts endpoint unavailable, switching to browser WebSocket...", err);
+                console.warn("Local /api/tts endpoint unavailable, trying public gateways...", err);
             }
         }
 
-        // Priority 2: Direct 100% Client-Side Browser WebSocket to Microsoft Edge TTS
+        // Priority 2: Try public Edge TTS CORS proxy gateways
+        const gateways = [
+            'https://edge-tts-cors-api.vercel.app/api/tts',
+            'https://edge-tts-api.vercel.app/api/tts'
+        ];
+
+        for (const gatewayUrl of gateways) {
+            try {
+                const res = await fetch(gatewayUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice, rate })
+                });
+
+                if (res.ok) {
+                    const blob = await res.blob();
+                    if (blob && blob.size > 0) return blob;
+                }
+            } catch (err) {
+                console.warn(`Gateway ${gatewayUrl} unavailable...`, err);
+            }
+        }
+
+        // Priority 3: Direct Client-Side Browser WebSocket fallback
         return new Promise((resolve, reject) => {
             const TRUSTED_TOKEN = "6A5AA1D4EA5942B4195C714257E2E89A";
             const wsUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_TOKEN}`;
