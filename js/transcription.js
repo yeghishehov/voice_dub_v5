@@ -28,9 +28,10 @@ export class Transcriber {
      * @param {string} sourceLangKey 
      * @param {string} apiKey 
      * @param {function(string):void} progressCb 
+     * @param {string} uiLang
      * @returns {Promise<Array<{id: number, start: string, end: string, sourceText: string, targetText: string}>>}
      */
-    static async transcribeChunks(chunks, sourceLangKey = "Армянский", apiKey = CONFIG.DEFAULT_API_KEY, progressCb = console.log) {
+    static async transcribeChunks(chunks, sourceLangKey = "Армянский", apiKey = CONFIG.DEFAULT_API_KEY, progressCb = console.log, uiLang = 'en') {
         const langMeta = CONFIG.SOURCE_LANGS[sourceLangKey] || CONFIG.SOURCE_LANGS["Армянский"];
         const promptLang = langMeta.prompt_lang;
         const modelId = CONFIG.MODEL_ID;
@@ -40,7 +41,10 @@ export class Transcriber {
 
         for (let i = 0; i < chunks.length; i++) {
             const chunk = chunks[i];
-            progressCb(`🛰️ Транскрибация фрагмента ${i + 1}/${chunks.length} (${chunk.startSec}с)...`);
+            const isRu = uiLang === 'ru';
+            progressCb(isRu 
+                ? `🛰️ Транскрибация фрагмента ${i + 1}/${chunks.length} (${chunk.startSec}с)...` 
+                : `🛰️ Transcribing chunk ${i + 1}/${chunks.length} (${chunk.startSec}s)...`);
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
@@ -132,7 +136,9 @@ export class Transcriber {
                     success = true;
                 } catch (err) {
                     attempts--;
-                    progressCb(`⚠️ Ошибка API в чанке ${i + 1} (${err.message}). Осталось попыток: ${attempts}`);
+                    progressCb(isRu 
+                        ? `⚠️ Ошибка API в чанке ${i + 1} (${err.message}). Осталось попыток: ${attempts}`
+                        : `⚠️ API error in chunk ${i + 1} (${err.message}). Retries left: ${attempts}`);
                     if (attempts > 0) {
                         await new Promise(r => setTimeout(r, 4000));
                     }
@@ -140,13 +146,18 @@ export class Transcriber {
             }
 
             if (!success) {
-                progressCb(`❌ Пропущен фрагмент ${i + 1} из-за ошибок API.`);
+                progressCb(isRu 
+                    ? `❌ Пропущен фрагмент ${i + 1} из-за ошибок API.`
+                    : `❌ Skipped chunk ${i + 1} due to API errors.`);
             }
         }
 
         // Sort by startSec
         allSegments.sort((a, b) => a.startSec - b.startSec);
-        progressCb(`🎉 Транскрибация завершена! Распознано фраз: ${allSegments.length}`);
+        const isRu = uiLang === 'ru';
+        progressCb(isRu 
+            ? `🎉 Транскрибация завершена! Распознано фраз: ${allSegments.length}`
+            : `🎉 Transcription completed! Recognized phrases: ${allSegments.length}`);
         return allSegments;
     }
 }

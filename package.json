@@ -3,6 +3,11 @@
   "version": "5.0.0",
   "description": "Client-side Web Audio & AI Video Dubbing Application",
   "type": "module",
+  "scripts": {
+    "start": "python server.py",
+    "dev": "python server.py",
+    "serve": "npx serve ."
+  },
   "dependencies": {
     "msedge-tts": "^2.0.7"
   }

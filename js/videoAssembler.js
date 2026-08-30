@@ -37,10 +37,12 @@ export class VideoAssembler {
      * @param {number} totalVideoDuration 
      * @param {string} mixMode "Заменить оригинал" | "Микшировать с оригиналом"
      * @param {function(string):void} progressCb 
+     * @param {string} uiLang
      * @returns {Promise<Blob>}
      */
-    static async mixAudioTracks(timedPhrases, origAudioBuffer, totalVideoDuration, mixMode = "Заменить оригинал", progressCb = console.log) {
-        progressCb("🔧 Сборка и микширование звуковых дорожек...");
+    static async mixAudioTracks(timedPhrases, origAudioBuffer, totalVideoDuration, mixMode = "Заменить оригинал", progressCb = console.log, uiLang = 'en') {
+        const isRu = uiLang === 'ru';
+        progressCb(isRu ? "🔧 Сборка и микширование звуковых дорожек..." : "🔧 Assembling and mixing audio tracks...");
 
         const sampleRate = 44100;
         const totalDuration = Math.max(
@@ -90,12 +92,14 @@ export class VideoAssembler {
             }
         }
 
-        progressCb(`🎛️ Загружено ${loadedCount} звуковых фрагментов для микширования...`);
+        progressCb(isRu 
+            ? `🎛️ Загружено ${loadedCount} звуковых фрагментов для микширования...`
+            : `🎛️ Loaded ${loadedCount} audio clips for mixing...`);
 
         const renderedBuffer = await offlineCtx.startRendering();
         const wavBlob = this.audioBufferToWav(renderedBuffer);
 
-        progressCb("✅ Микширование звука завершено!");
+        progressCb(isRu ? "✅ Микширование звука завершено!" : "✅ Audio mixing completed!");
         return wavBlob;
     }
 
@@ -128,25 +132,31 @@ export class VideoAssembler {
         view.setUint16(20, format, true);
         view.setUint16(22, numChannels, true);
         view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
-        view.setUint16(32, numChannels * (bitDepth / 8), true);
+        view.setUint32(28, sampleRate * numChannels * 2, true);
+        view.setUint16(32, numChannels * 2, true);
         view.setUint16(34, bitDepth, true);
         this.writeString(view, 36, 'data');
         view.setUint32(40, dataLength, true);
 
-        let offset = 44;
-        for (let i = 0; i < result.length; i++, offset += 2) {
-            const s = Math.max(-1, Math.min(1, result[i]));
-            view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-        }
+        this.floatTo16BitPCM(view, 44, result);
 
         return new Blob([arrayBuffer], { type: 'audio/wav' });
+    }
+
+    static floatTo16BitPCM(output, offset, input) {
+        for (let i = 0; i < input.length; i++, offset += 2) {
+            const s = Math.max(-1, Math.min(1, input[i]));
+            output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
     }
 
     static interleave(inputL, inputR) {
         const length = inputL.length + inputR.length;
         const result = new Float32Array(length);
-        let index = 0, inputIndex = 0;
+
+        let index = 0;
+        let inputIndex = 0;
+
         while (index < length) {
             result[index++] = inputL[inputIndex];
             result[index++] = inputR[inputIndex];
@@ -159,148 +169,5 @@ export class VideoAssembler {
         for (let i = 0; i < string.length; i++) {
             view.setUint8(offset + i, string.charCodeAt(i));
         }
-    }
-
-    /**
-     * Draws formatted subtitles onto HTML5 Canvas element.
-     * @param {CanvasRenderingContext2D} ctx 
-     * @param {string} text 
-     * @param {number} width 
-     * @param {number} height 
-     */
-    static drawSubtitle(ctx, text, width, height) {
-        if (!text) return;
-
-        const fontSize = Math.max(18, Math.floor(height * 0.045));
-        ctx.font = `bold ${fontSize}px "Inter", "Segoe UI", Arial, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-
-        const maxPx = width * 0.85;
-        const words = text.split(' ');
-        const lines = [];
-        let currentLine = '';
-
-        for (const word of words) {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
-            const metrics = ctx.measureText(testLine);
-            if (metrics.width > maxPx && currentLine) {
-                lines.push(currentLine);
-                currentLine = word;
-            } else {
-                currentLine = testLine;
-            }
-        }
-        if (currentLine) lines.push(currentLine);
-
-        const lineHeight = fontSize * 1.3;
-        const startY = height - 40 - (lines.length - 1) * lineHeight;
-
-        lines.forEach((line, index) => {
-            const y = startY + index * lineHeight;
-
-            // Background pill box
-            const m = ctx.measureText(line);
-            const pWidth = m.width + 24;
-            const pHeight = fontSize * 1.3;
-
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-            ctx.beginPath();
-            if (ctx.roundRect) {
-                ctx.roundRect(width / 2 - pWidth / 2, y - fontSize - 4, pWidth, pHeight, 8);
-            } else {
-                ctx.rect(width / 2 - pWidth / 2, y - fontSize - 4, pWidth, pHeight);
-            }
-            ctx.fill();
-
-            // Text stroke outline & fill
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 4;
-            ctx.strokeText(line, width / 2, y);
-
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillText(line, width / 2, y);
-        });
-    }
-
-    /**
-     * Records canvas video frames and mixed dubbed audio track into a single downloadable video Blob (.webm / .mp4).
-     * @param {HTMLVideoElement} video 
-     * @param {HTMLCanvasElement} canvas 
-     * @param {Blob} mixedAudioBlob 
-     * @param {Array<Object>} timedPhrases 
-     * @param {function(string):void} progressCb 
-     * @returns {Promise<Blob>}
-     */
-    static async recordDubbedVideo(video, canvas, mixedAudioBlob, timedPhrases, progressCb = console.log) {
-        return new Promise(async (resolve, reject) => {
-            try {
-                progressCb("🎬 Подготовка записи видеопотока с дубляжом...");
-
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const arrayBuffer = await mixedAudioBlob.arrayBuffer();
-                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-                const audioSource = audioCtx.createBufferSource();
-                audioSource.buffer = audioBuffer;
-
-                const audioDestination = audioCtx.createMediaStreamDestination();
-                audioSource.connect(audioDestination);
-
-                const canvasStream = canvas.captureStream(30);
-                const combinedStream = new MediaStream([
-                    ...canvasStream.getVideoTracks(),
-                    ...audioDestination.stream.getAudioTracks()
-                ]);
-
-                let mimeType = 'video/webm';
-                if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2')) {
-                    mimeType = 'video/mp4;codecs=avc1.42E01E,mp4a.40.2';
-                } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-                    mimeType = 'video/mp4';
-                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
-                    mimeType = 'video/webm;codecs=vp9,opus';
-                }
-
-                const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 4000000 });
-                const recordedChunks = [];
-
-                recorder.ondataavailable = (e) => {
-                    if (e.data && e.data.size > 0) {
-                        recordedChunks.push(e.data);
-                    }
-                };
-
-                recorder.onstop = () => {
-                    audioCtx.close();
-                    const videoBlob = new Blob(recordedChunks, { type: mimeType });
-                    progressCb("✅ Запись готового видеофайла завершена!");
-                    resolve(videoBlob);
-                };
-
-                video.currentTime = 0;
-                video.muted = true;
-
-                const totalDuration = video.duration || audioBuffer.duration;
-
-                const checkTimeInterval = setInterval(() => {
-                    const pct = Math.min(100, Math.floor((video.currentTime / totalDuration) * 100));
-                    progressCb(`🎬 Рендеринг и запись видео: ${pct}%`);
-
-                    if (video.currentTime >= totalDuration - 0.2 || video.ended) {
-                        clearInterval(checkTimeInterval);
-                        video.pause();
-                        recorder.stop();
-                    }
-                }, 400);
-
-                await video.play();
-                audioSource.start(0);
-                recorder.start(100);
-
-            } catch (err) {
-                reject(err);
-            }
-        });
     }
 }

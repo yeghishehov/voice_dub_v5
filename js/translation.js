@@ -10,9 +10,10 @@ export class Translator {
      * @param {string} sourceLangKey 
      * @param {string} apiKey 
      * @param {function(string):void} progressCb 
+     * @param {string} uiLang
      * @returns {Promise<Array<Object>>}
      */
-    static async translatePhrases(phrases, targetLang = "Русский", sourceLangKey = "Армянский", apiKey = CONFIG.DEFAULT_API_KEY, progressCb = console.log) {
+    static async translatePhrases(phrases, targetLang = "Русский", sourceLangKey = "Армянский", apiKey = CONFIG.DEFAULT_API_KEY, progressCb = console.log, uiLang = 'en') {
         if (!phrases || phrases.length === 0) return phrases;
 
         const langName = CONFIG.LANG_NAMES[targetLang] || targetLang;
@@ -21,14 +22,19 @@ export class Translator {
 
         const batchSize = 10;
         const total = phrases.length;
+        const isRu = uiLang === 'ru';
 
-        progressCb(`🌐 Перевод ${total} фраз на ${targetLang} (${langName})...`);
+        progressCb(isRu 
+            ? `🌐 Перевод ${total} фраз на ${targetLang} (${langName})...` 
+            : `🌐 Translating ${total} phrases into ${targetLang} (${langName})...`);
 
         for (let i = 0; i < total; i += batchSize) {
             const batch = phrases.slice(i, i + batchSize);
             const sourceTexts = batch.map(p => p.sourceText);
 
-            progressCb(`🌐 Перевод фраз ${i + 1}–${Math.min(i + batchSize, total)} из ${total}...`);
+            progressCb(isRu 
+                ? `🌐 Перевод фраз ${i + 1}–${Math.min(i + batchSize, total)} из ${total}...` 
+                : `🌐 Translating phrases ${i + 1}–${Math.min(i + batchSize, total)} of ${total}...`);
 
             const prompt = 
                 `Translate these ${sourceTexts.length} ${sourceLangName} phrases into ${langName}.\n` +
@@ -72,7 +78,9 @@ export class Translator {
                     }
                 } catch (err) {
                     attempts--;
-                    progressCb(`⚠️ Ошибка перевода в чанке ${i + 1} (${err.message}). Осталось попыток: ${attempts}`);
+                    progressCb(isRu 
+                        ? `⚠️ Ошибка перевода в чанке ${i + 1} (${err.message}). Осталось попыток: ${attempts}`
+                        : `⚠️ Translation error in batch ${i + 1} (${err.message}). Retries left: ${attempts}`);
                     if (attempts > 0) {
                         await new Promise(r => setTimeout(r, 3000));
                     }
@@ -94,7 +102,9 @@ export class Translator {
             await new Promise(r => setTimeout(r, 1000));
         }
 
-        progressCb(`✅ Перевод завершен! Готово фраз: ${total}`);
+        progressCb(isRu 
+            ? `✅ Перевод завершен! Готово фраз: ${total}`
+            : `✅ Translation completed! Total phrases: ${total}`);
         return phrases;
     }
 }

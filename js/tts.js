@@ -126,13 +126,17 @@ export class TTSManager {
      * @param {Array<Object>} phrases 
      * @param {string} voice 
      * @param {function(string):void} progressCb 
+     * @param {string} uiLang
      * @returns {Promise<Array<Object>>}
      */
-    static async synthesizePhrases(phrases, voice = "ru-RU-DmitryNeural", progressCb = console.log) {
+    static async synthesizePhrases(phrases, voice = "ru-RU-DmitryNeural", progressCb = console.log, uiLang = 'en') {
         const validPhrases = phrases.filter(p => p.targetText && p.targetText.trim().length > 0);
         const total = validPhrases.length;
+        const isRu = uiLang === 'ru';
 
-        progressCb(`🎙️ Озвучивание ${total} фраз СТРОГО через Microsoft Edge TTS (${voice})...`);
+        progressCb(isRu 
+            ? `🎙️ Озвучивание ${total} фраз через Microsoft Edge TTS (${voice})...`
+            : `🎙️ Voicing ${total} phrases via Microsoft Edge TTS (${voice})...`);
 
         let count = 0;
         for (let i = 0; i < validPhrases.length; i++) {
@@ -154,17 +158,23 @@ export class TTSManager {
 
                 count++;
             } catch (err) {
-                progressCb(`❌ Ошибка Edge TTS для фразы #${phrase.id}: ${err.message}`);
+                progressCb(isRu 
+                    ? `❌ Ошибка Edge TTS для фразы #${phrase.id}: ${err.message}`
+                    : `❌ Edge TTS error for phrase #${phrase.id}: ${err.message}`);
             }
 
             await new Promise(r => setTimeout(r, 200));
         }
 
         if (count === 0) {
-            throw new Error("Не удалось озвучить ни одну фразу через Edge TTS. Убедитесь, что запущен server.py или доступен интернет.");
+            throw new Error(isRu 
+                ? "Не удалось озвучить ни одну фразу через Edge TTS. Убедитесь, что доступен интернет или запущен локальный сервер."
+                : "Failed to synthesize phrases via Edge TTS. Please check your internet connection or local server.");
         }
 
-        progressCb(`✅ Успешно озвучено фраз через Edge TTS: ${count}/${total}`);
+        progressCb(isRu 
+            ? `✅ Успешно озвучено фраз через Edge TTS: ${count}/${total}`
+            : `✅ Successfully voiced phrases via Edge TTS: ${count}/${total}`);
         return phrases;
     }
 

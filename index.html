@@ -39,35 +39,35 @@
                 <div class="step-number">1</div>
                 <div class="step-info">
                     <span class="step-title" data-i18n="step1Title">1. Import</span>
-                    <span class="step-sub">Files & Text</span>
+                    <span class="step-sub" data-i18n="step1Sub">Files & Text</span>
                 </div>
             </div>
             <div class="step-card" data-step="2" id="stepNav2">
                 <div class="step-number">2</div>
                 <div class="step-info">
                     <span class="step-title" data-i18n="step2Title">2. Transcription</span>
-                    <span class="step-sub">Speech STT</span>
+                    <span class="step-sub" data-i18n="step2Sub">Speech STT</span>
                 </div>
             </div>
             <div class="step-card" data-step="3" id="stepNav3">
                 <div class="step-number">3</div>
                 <div class="step-info">
                     <span class="step-title" data-i18n="step3Title">3. Translation</span>
-                    <span class="step-sub">Translate script</span>
+                    <span class="step-sub" data-i18n="step3Sub">Translate script</span>
                 </div>
             </div>
             <div class="step-card" data-step="4" id="stepNav4">
                 <div class="step-number">4</div>
                 <div class="step-info">
                     <span class="step-title" data-i18n="step4Title">4. Voiceover (TTS)</span>
-                    <span class="step-sub">Speech TTS</span>
+                    <span class="step-sub" data-i18n="step4Sub">Speech TTS</span>
                 </div>
             </div>
             <div class="step-card" data-step="5" id="stepNav5">
                 <div class="step-number">5</div>
                 <div class="step-info">
                     <span class="step-title" data-i18n="step5Title">5. Export Hub</span>
-                    <span class="step-sub">Audio & Script</span>
+                    <span class="step-sub" data-i18n="step5Sub">Audio & Script</span>
                 </div>
             </div>
         </nav>
@@ -89,7 +89,7 @@
 
                 <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
                     <label for="videoFileInput" class="btn btn-primary" id="btnSelectFile"
-                        style="cursor: pointer; padding: 0.85rem 1.75rem; font-size: 1rem;" data-i18n="dropVideoTitle">
+                        style="cursor: pointer; padding: 0.85rem 1.75rem; font-size: 1rem;" data-i18n="selectVideoBtn">
                         🎬 Select video file on computer
                     </label>
                     <input type="file" id="videoFileInput" accept="video/*,.mp4,.webm,.mov,.avi,.mkv,.m4v,.flv,.wmv,.ts"
@@ -157,13 +157,13 @@
                     style="margin-bottom: 0; flex-direction: row; align-items: center; gap: 0.75rem;">
                     <label class="form-label" for="sourceLangSelect" data-i18n="sourceLangLabel">Source Language:</label>
                     <select class="form-select" id="sourceLangSelect">
-                        <option value="Армянский">Армянский</option>
-                        <option value="Русский">Русский</option>
+                        <option value="Армянский" data-i18n="langArmenian">Армянский</option>
+                        <option value="Русский" data-i18n="langRussian">Русский</option>
                     </select>
                 </div>
             </div>
 
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;" data-i18n="stage2Desc">
                 Click "Start Transcription" to extract speech with timestamps via Gemini API. Edit any phrase in the table.
             </p>
 
@@ -213,16 +213,16 @@
                     style="margin-bottom: 0; flex-direction: row; align-items: center; gap: 0.75rem;">
                     <label class="form-label" for="targetLangSelect" data-i18n="targetLangLabel">Target Language:</label>
                     <select class="form-select" id="targetLangSelect">
-                        <option value="Русский">Русский</option>
-                        <option value="Английский">Английский</option>
-                        <option value="Персидский">Персидский</option>
-                        <option value="Испанский">Испанский</option>
-                        <option value="Египетский">Египетский арабский</option>
+                        <option value="Русский" data-i18n="langRussian">Русский</option>
+                        <option value="Английский" data-i18n="langEnglish">Английский</option>
+                        <option value="Персидский" data-i18n="langPersian">Персидский</option>
+                        <option value="Испанский" data-i18n="langSpanish">Испанский</option>
+                        <option value="Египетский" data-i18n="langEgyptian">Египетский арабский</option>
                     </select>
                 </div>
             </div>
 
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;" data-i18n="stage3Desc">
                 Translation is performed in batches using Gemini API. Modify translation text in the table anytime.
             </p>
 
@@ -253,11 +253,11 @@
                     <div class="form-group" style="margin-bottom: 0; flex-direction: row; align-items: center; gap: 0.5rem;">
                         <label class="form-label" for="targetLangSelectStep4" data-i18n="ttsLangLabel">Voiceover Language:</label>
                         <select class="form-select" id="targetLangSelectStep4">
-                            <option value="Русский">Русский</option>
-                            <option value="Английский">Английский</option>
-                            <option value="Персидский">Персидский</option>
-                            <option value="Испанский">Испанский</option>
-                            <option value="Египетский">Египетский арабский</option>
+                            <option value="Русский" data-i18n="langRussian">Русский</option>
+                            <option value="Английский" data-i18n="langEnglish">Английский</option>
+                            <option value="Персидский" data-i18n="langPersian">Персидский</option>
+                            <option value="Испанский" data-i18n="langSpanish">Испанский</option>
+                            <option value="Египетский" data-i18n="langEgyptian">Египетский арабский</option>
                         </select>
                     </div>
 
@@ -270,7 +270,7 @@
                 </div>
             </div>
 
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;" data-i18n="stage4Desc">
                 Speech synthesis is powered directly by Microsoft Edge TTS neural voices. Preview each phrase in the table.
             </p>
 
@@ -366,14 +366,14 @@
             <div class="log-box" id="logBox5" style="display: none; width: 100%; margin-top: 1.5rem;"></div>
 
             <div style="margin-top: 2rem; display: flex; justify-content: flex-start;">
-                <button class="btn btn-secondary" id="btnBackToStep4">⬅️ Назад к озвучке</button>
+                <button class="btn btn-secondary" id="btnBackToStep4" data-i18n="backToVoiceoverBtn">⬅️ Back to Voiceover</button>
             </div>
         </section>
 
     </main>
 
     <!-- Footer -->
-    <footer class="app-footer">
+    <footer class="app-footer" data-i18n="footerText">
         VOICE DUB v5 — Pure Frontend Client-Side Video Dubbing Application
     </footer>
 

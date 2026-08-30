@@ -190,8 +190,9 @@ class VoiceDubApp {
 
     async handleVideoFile(file) {
         if (!file) return;
+        const dict = I18N[this.state.uiLang] || I18N.en;
         this.state.videoFile = file;
-        this.log(1, `📂 Загружен файл: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} МБ)`, 'success');
+        this.log(1, `${dict.logFileLoaded} ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`, 'success');
 
         const videoPreview = document.getElementById('sourceVideoPreview');
         const videoSpecsBox = document.getElementById('videoSpecsBox');
@@ -202,17 +203,17 @@ class VoiceDubApp {
         const btnSelectFile = document.getElementById('btnSelectFile');
 
         if (selectedFileNameDisplay) {
-            selectedFileNameDisplay.textContent = `✅ Выбран файл: ${file.name}`;
+            selectedFileNameDisplay.textContent = `${dict.logSelectedFile} ${file.name}`;
             selectedFileNameDisplay.style.display = 'block';
         }
         if (btnSelectFile) {
-            btnSelectFile.textContent = `📂 Выбрать другой файл`;
+            btnSelectFile.textContent = dict.selectAnotherFileBtn;
         }
 
         document.getElementById('specFileName').textContent = file.name;
-        document.getElementById('specFileSize').textContent = `${(file.size / (1024 * 1024)).toFixed(1)} МБ`;
-        document.getElementById('specDuration').textContent = "Загрузка...";
-        document.getElementById('specResolution').textContent = "Загрузка...";
+        document.getElementById('specFileSize').textContent = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+        document.getElementById('specDuration').textContent = dict.statusLoading;
+        document.getElementById('specResolution').textContent = dict.statusLoading;
 
         if (videoSpecsBox) {
             videoSpecsBox.style.display = 'grid';
@@ -231,7 +232,7 @@ class VoiceDubApp {
                     const mins = Math.floor(totalSecs / 60);
                     const secs = Math.floor(totalSecs % 60);
                     document.getElementById('specDuration').textContent =
-                        mins > 0 ? `${mins} мин ${secs} сек` : `${totalSecs.toFixed(1)} сек`;
+                        mins > 0 ? `${mins} ${dict.minsLabel} ${secs} ${dict.secsLabel}` : `${totalSecs.toFixed(1)} ${dict.secsLabel}`;
                 }
                 if (videoPreview.videoWidth && videoPreview.videoHeight) {
                     document.getElementById('specResolution').textContent = `${videoPreview.videoWidth}x${videoPreview.videoHeight}`;
@@ -248,9 +249,8 @@ class VoiceDubApp {
             videoPreview.onloadeddata = updateMeta;
 
             videoPreview.onerror = () => {
-                this.log(1, "ℹ️ Формат принят (аудио будет извлечено на Этапе 2).", 'info');
-                document.getElementById('specDuration').textContent = "В процессе извлечения";
-                document.getElementById('specResolution').textContent = "Аудиофайл / Контейнер";
+                document.getElementById('specDuration').textContent = dict.statusExtracting;
+                document.getElementById('specResolution').textContent = dict.specAudioContainer;
             };
 
             const objectUrl = URL.createObjectURL(file);
@@ -273,6 +273,10 @@ class VoiceDubApp {
     updateUiLanguage() {
         const dict = I18N[this.state.uiLang] || I18N.en;
 
+        if (dict.docTitle) {
+            document.title = dict.docTitle;
+        }
+
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if (dict[key]) {
@@ -290,6 +294,16 @@ class VoiceDubApp {
         const langToggleBtn = document.getElementById('langToggleBtn');
         if (langToggleBtn) {
             langToggleBtn.textContent = dict.langToggleBtn;
+        }
+
+        const btnSelectFile = document.getElementById('btnSelectFile');
+        if (btnSelectFile) {
+            btnSelectFile.textContent = this.state.videoFile ? dict.selectAnotherFileBtn : dict.selectVideoBtn;
+        }
+
+        const selectedFileNameDisplay = document.getElementById('selectedFileNameDisplay');
+        if (selectedFileNameDisplay && this.state.videoFile) {
+            selectedFileNameDisplay.textContent = `${dict.logSelectedFile} ${this.state.videoFile.name}`;
         }
     }
 
@@ -312,25 +326,26 @@ class VoiceDubApp {
         if (!this.state.videoFile) return;
         if (!this.checkApiKey()) return;
 
+        const dict = I18N[this.state.uiLang] || I18N.en;
         const btn = document.getElementById('btnStartTranscription');
         btn.disabled = true;
 
         try {
-            this.log(2, '⚡ Декодирование аудиодорожки из видео через Web Audio API...', 'info');
+            this.log(2, dict.logAudioDecoding, 'info');
             this.state.audioBuffer = await AudioExtractor.decodeAudioFromFile(this.state.videoFile);
 
-            this.log(2, `✂️ Извлечен аудиобуфер: ${this.state.audioBuffer.duration.toFixed(1)}с, ${this.state.audioBuffer.sampleRate}Гц`, 'success');
+            this.log(2, `${dict.logAudioExtracted} ${this.state.audioBuffer.duration.toFixed(1)}s, ${this.state.audioBuffer.sampleRate}Hz`, 'success');
 
             const chunks = await AudioExtractor.extractChunks(this.state.audioBuffer, 60, (msg) => this.log(2, msg, 'info'));
 
             const sourceLang = document.getElementById('sourceLangSelect').value;
-            this.state.phrases = await Transcriber.transcribeChunks(chunks, sourceLang, this.state.apiKey, (msg) => this.log(2, msg, 'info'));
+            this.state.phrases = await Transcriber.transcribeChunks(chunks, sourceLang, this.state.apiKey, (msg) => this.log(2, msg, 'info'), this.state.uiLang);
 
             this.renderPhrasesTable();
             document.getElementById('btnGoToStep3').disabled = false;
             document.getElementById('stepNav2').classList.add('completed');
         } catch (err) {
-            this.log(2, `❌ Сбой транскрибации: ${err.message}`, 'error');
+            this.log(2, `${dict.logTranscriptionFailed} ${err.message}`, 'error');
         } finally {
             btn.disabled = false;
         }
@@ -377,6 +392,7 @@ class VoiceDubApp {
         if (!this.state.phrases || this.state.phrases.length === 0) return;
         if (!this.checkApiKey()) return;
 
+        const dict = I18N[this.state.uiLang] || I18N.en;
         const btn = document.getElementById('btnStartTranslation');
         btn.disabled = true;
 
@@ -389,14 +405,15 @@ class VoiceDubApp {
                 targetLang,
                 sourceLang,
                 this.state.apiKey,
-                (msg) => this.log(3, msg, 'info')
+                (msg) => this.log(3, msg, 'info'),
+                this.state.uiLang
             );
 
             this.renderPhrasesTable();
             document.getElementById('btnGoToStep4').disabled = false;
             document.getElementById('stepNav3').classList.add('completed');
         } catch (err) {
-            this.log(3, `❌ Сбой перевода: ${err.message}`, 'error');
+            this.log(3, `${dict.logTranslationFailed} ${err.message}`, 'error');
         } finally {
             btn.disabled = false;
         }
@@ -405,6 +422,7 @@ class VoiceDubApp {
     async runTTS() {
         if (!this.state.phrases || this.state.phrases.length === 0) return;
 
+        const dict = I18N[this.state.uiLang] || I18N.en;
         const btn = document.getElementById('btnStartTTS');
         btn.disabled = true;
 
@@ -413,24 +431,26 @@ class VoiceDubApp {
             this.state.phrases = await TTSManager.synthesizePhrases(
                 this.state.phrases,
                 voice,
-                (msg) => this.log(4, msg, 'info')
+                (msg) => this.log(4, msg, 'info'),
+                this.state.uiLang
             );
 
             this.renderPhrasesTable();
 
-            this.log(4, '🎛️ Автоматическая компоновка единой аудиодорожки (.wav)...', 'info');
+            this.log(4, dict.logAutoAssembly, 'info');
             await this.runAssembly();
 
             document.getElementById('btnGoToStep5').disabled = false;
             document.getElementById('stepNav4').classList.add('completed');
         } catch (err) {
-            this.log(4, `❌ Сбой синтеза речи: ${err.message}`, 'error');
+            this.log(4, `${dict.logTtsFailed} ${err.message}`, 'error');
         } finally {
             btn.disabled = false;
         }
     }
 
     renderPhrasesTable() {
+        const dict = I18N[this.state.uiLang] || I18N.en;
         const box = document.getElementById('phrasesTableBox');
         const tbody = document.getElementById('phrasesTableBody');
         if (!box || !tbody) return;
@@ -477,8 +497,8 @@ class VoiceDubApp {
                     </select>
                 </td>
                 <td style="text-align: center; white-space: nowrap;">
-                    ${phrase.audioUrl ? `<button class="btn-play-mini btn-play-audio" data-url="${phrase.audioUrl}" title="Прослушать">▶️</button>` : ''}
-                    ${isStep4 ? `<button class="btn-play-mini btn-re-tts" data-id="${phrase.id}" title="Сгенерировать / Перегенерировать фразу">🔄</button>` : ''}
+                    ${phrase.audioUrl ? `<button class="btn-play-mini btn-play-audio" data-url="${phrase.audioUrl}" title="${dict.playTooltip}">▶️</button>` : ''}
+                    ${isStep4 ? `<button class="btn-play-mini btn-re-tts" data-id="${phrase.id}" title="${dict.reTtsTooltip}">🔄</button>` : ''}
                 </td>
             `;
 
@@ -532,14 +552,15 @@ class VoiceDubApp {
     }
 
     async synthesizeSinglePhrase(phrase) {
+        const dict = I18N[this.state.uiLang] || I18N.en;
         const text = (phrase.targetText || phrase.sourceText || '').trim();
         if (!text) {
-            alert('Текст фразы пуст!');
+            alert(dict.emptyPhraseAlert);
             return;
         }
 
         const voice = phrase.voice || document.getElementById('voiceSelect')?.value || "ru-RU-DmitryNeural";
-        this.log(4, `🎙️ Генерация фразы #${phrase.id + 1}: "${text.substring(0, 30)}..." (${voice})`, 'info');
+        this.log(4, `${dict.logSynthesizingPhrase}${phrase.id + 1}: "${text.substring(0, 30)}..." (${voice})`, 'info');
 
         try {
             const mp3Blob = await EdgeTTS.synthesize(text, voice);
@@ -551,17 +572,18 @@ class VoiceDubApp {
             phrase.audioDuration = durationSec;
 
             this.renderPhrasesTable();
-            this.log(4, `✅ Фраза #${phrase.id + 1} успешно озвучена!`, 'success');
+            this.log(4, `${dict.logPhraseSuccess}${phrase.id + 1} ${dict.logPhraseSuccessSuffix}`, 'success');
 
             // Auto-update final audio mix
             await this.runAssembly();
         } catch (err) {
-            this.log(4, `❌ Ошибка озвучки фразы #${phrase.id + 1}: ${err.message}`, 'error');
+            this.log(4, `${dict.logPhraseError}${phrase.id + 1}: ${err.message}`, 'error');
         }
     }
 
     async runAssembly() {
         if (!this.state.phrases || this.state.phrases.length === 0) return;
+        const dict = I18N[this.state.uiLang] || I18N.en;
 
         try {
             const mixMode = "Заменить оригинал"; // Pure dubbing audio track for CapCut
@@ -569,7 +591,7 @@ class VoiceDubApp {
             const { timedPhrases, shiftedCount, totalDuration } = VideoAssembler.calculateTimings(this.state.phrases);
             this.state.timedPhrases = timedPhrases;
 
-            this.log(5, `📊 Рассчитаны тайминги для ${timedPhrases.length} фраз. Сдвинуто из-за наложений: ${shiftedCount}`, 'info');
+            this.log(5, `${dict.logTimingsCalculated} ${timedPhrases.length} ${dict.logShiftedOverlaps} ${shiftedCount}`, 'info');
 
             const videoPreview = document.getElementById('sourceVideoPreview');
             const videoDuration = (videoPreview && !isNaN(videoPreview.duration)) ? videoPreview.duration : totalDuration;
@@ -579,7 +601,8 @@ class VoiceDubApp {
                 null,
                 videoDuration,
                 mixMode,
-                (msg) => this.log(5, msg, 'info')
+                (msg) => this.log(5, msg, 'info'),
+                this.state.uiLang
             );
 
             this.state.mixedAudioUrl = URL.createObjectURL(this.state.mixedAudioBlob);
@@ -589,15 +612,16 @@ class VoiceDubApp {
                 btnDownloadAudio.style.display = 'inline-flex';
             }
             document.getElementById('stepNav5').classList.add('completed');
-            this.log(5, '🎉 Сборка аудиодорожки (.wav) завершена! Нажмите зеленый блок ниже для скачивания.', 'success');
+            this.log(5, dict.logAssemblyCompleted, 'success');
         } catch (err) {
-            this.log(5, `❌ Ошибка сборки аудиодорожки: ${err.message}`, 'error');
+            this.log(5, `${dict.logAssemblyFailed} ${err.message}`, 'error');
         }
     }
 
-
     async handleTextImport(file, targetField = 'auto') {
         if (!file) return;
+        const dict = I18N[this.state.uiLang] || I18N.en;
+
         try {
             const textContent = await file.text();
             let importedPhrases = [];
@@ -666,14 +690,14 @@ class VoiceDubApp {
 
                 this.renderPhrasesTable();
 
-                const label = targetField === 'targetText' ? 'переведенный текст' : 'оригинальный текст';
+                const label = targetField === 'targetText' ? dict.importedTransTextLabel : dict.importedOrigTextLabel;
                 const selectedFileNameDisplay = document.getElementById('selectedFileNameDisplay');
                 if (selectedFileNameDisplay) {
-                    selectedFileNameDisplay.textContent = `📝 Загружен ${label}: ${file.name} (${importedPhrases.length} фраз)`;
+                    selectedFileNameDisplay.textContent = `${dict.importedTextLabel} ${label}: ${file.name} (${importedPhrases.length})`;
                     selectedFileNameDisplay.style.display = 'block';
                 }
 
-                this.log(1, `📝 Успешно импортирован ${label} (${importedPhrases.length} фраз) из ${file.name}`, 'success');
+                this.log(1, `${dict.logImportSuccess} ${label} (${importedPhrases.length}) - ${file.name}`, 'success');
 
                 document.getElementById('stepNav2')?.classList.add('completed');
                 document.getElementById('btnGoToStep2').disabled = false;
@@ -685,11 +709,11 @@ class VoiceDubApp {
                     document.getElementById('stepNav3')?.classList.add('completed');
                     document.getElementById('btnGoToStep4').disabled = false;
                     document.getElementById('btnGoToStep5').disabled = false;
-                    this.log(1, `✨ Загружен перевод! Доступны этапы 4 (Озвучка) и 5 (Экспорт)`, 'info');
+                    this.log(1, dict.translationLoadedInfo, 'info');
                 }
             }
         } catch (err) {
-            this.log(1, `❌ Ошибка импорта текста: ${err.message}`, 'error');
+            this.log(1, `${dict.logImportError} ${err.message}`, 'error');
         }
     }
 
@@ -764,7 +788,7 @@ class VoiceDubApp {
             return;
         }
 
-        this.log(5, `📦 Download ${voicedPhrases.length} phrase audio files...`, 'info');
+        this.log(5, `${dict.logDownloadIndividual} ${voicedPhrases.length} ${dict.logDownloadIndividualSuffix}`, 'info');
         voicedPhrases.forEach((phrase, idx) => {
             setTimeout(() => {
                 const a = document.createElement('a');
