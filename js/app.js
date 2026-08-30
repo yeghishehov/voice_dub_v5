@@ -498,6 +498,7 @@ class VoiceDubApp {
                 </td>
                 <td style="text-align: center; white-space: nowrap;">
                     ${phrase.audioUrl ? `<button class="btn-play-mini btn-play-audio" data-url="${phrase.audioUrl}" title="${dict.playTooltip}">▶️</button>` : ''}
+                    ${phrase.audioUrl ? `<button class="btn-play-mini btn-download-single-audio" data-id="${phrase.id}" title="${dict.downloadSingleAudioTooltip}">⬇️</button>` : ''}
                     ${isStep4 ? `<button class="btn-play-mini btn-re-tts" data-id="${phrase.id}" title="${dict.reTtsTooltip}">🔄</button>` : ''}
                 </td>
             `;
@@ -535,6 +536,23 @@ class VoiceDubApp {
                 if (url) {
                     const a = new Audio(url);
                     a.play();
+                }
+            });
+        });
+
+        // Add single phrase audio download listeners
+        tbody.querySelectorAll('.btn-download-single-audio').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(e.currentTarget.getAttribute('data-id'));
+                const phrase = this.state.phrases.find(p => p.id === id);
+                if (phrase && phrase.audioUrl) {
+                    const a = document.createElement('a');
+                    a.href = phrase.audioUrl;
+                    const timeClean = (phrase.start || '00-00').replace(':', '-');
+                    a.download = `phrase_${phrase.id + 1}_${timeClean}.mp3`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
                 }
             });
         });

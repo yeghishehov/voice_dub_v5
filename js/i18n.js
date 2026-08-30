@@ -78,6 +78,7 @@ export const I18N = {
         thVoice: "Speaker Voice",
         thAudio: "Audio",
         playTooltip: "Play",
+        downloadSingleAudioTooltip: "Download phrase audio (.mp3)",
         reTtsTooltip: "Generate / Regenerate phrase",
 
         // Stage 5: Export Hub
@@ -217,6 +218,7 @@ export const I18N = {
         thVoice: "Голос диктора",
         thAudio: "Аудио",
         playTooltip: "Прослушать",
+        downloadSingleAudioTooltip: "Скачать аудио фразы (.mp3)",
         reTtsTooltip: "Сгенерировать / Перегенерировать фразу",
 
         // Stage 5: Export Hub
