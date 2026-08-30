@@ -44,6 +44,15 @@ export const CONFIG = {
         "Египетский": "Egyptian Arabic (Masri dialect)",
     },
 
+    LANG_FILE_NAMES: {
+        "Русский": "Russian",
+        "Английский": "English",
+        "Персидский": "Persian",
+        "Испанский": "Spanish",
+        "Египетский": "Egyptian",
+        "Армянский": "Armenian"
+    },
+
     SOURCE_LANGS: {
         "Армянский": {
             "csv_name": "armenian",

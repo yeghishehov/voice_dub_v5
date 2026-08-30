@@ -6,6 +6,7 @@ import { Transcriber } from './transcription.js';
 import { Translator } from './translation.js';
 import { TTSManager, EdgeTTS } from './tts.js';
 import { VideoAssembler } from './videoAssembler.js';
+import { ZipBuilder } from './zipBuilder.js';
 import { I18N } from './i18n.js';
 
 class VoiceDubApp {
@@ -132,14 +133,15 @@ class VoiceDubApp {
 
     canNavigateToStep(step) {
         if (step === 1) return true;
-        if (step === 2 && (this.state.videoFile || this.state.phrases.length > 0)) return true;
-        if (step === 3 && this.state.phrases.some(p => p.sourceText && p.sourceText.trim().length > 0)) return true;
-        if (step === 4 && this.state.phrases.some(p => p.targetText && p.targetText.trim().length > 0)) return true;
-        if (step === 5 && this.state.phrases.length > 0) return true;
+        if (step === 2) return Boolean(this.state.videoFile);
+        if (step === 3) return (this.state.phrases && this.state.phrases.some(p => p.sourceText && p.sourceText.trim().length > 0)) || Boolean(this.state.videoFile);
+        if (step === 4) return this.state.phrases && this.state.phrases.some(p => p.targetText && p.targetText.trim().length > 0);
+        if (step === 5) return this.state.phrases && this.state.phrases.length > 0;
         return false;
     }
 
     goToStep(step) {
+        if (!this.canNavigateToStep(step)) return;
         this.state.currentStep = step;
         for (let i = 1; i <= 5; i++) {
             const nav = document.getElementById(`stepNav${i}`);
@@ -169,6 +171,10 @@ class VoiceDubApp {
                 }
                 this.renderPhrasesTable();
             }
+        }
+
+        if (step === 4) {
+            this.updateVoiceOptions('step3');
         }
 
         if (step === 5) {
@@ -361,9 +367,9 @@ class VoiceDubApp {
             if (langSelect4) langSelect4.value = targetLang;
         } else if (changedFrom === 'step4' && langSelect4) {
             targetLang = langSelect4.value;
-            if (langSelect3) langSelect3.value = targetLang;
         } else if (langSelect3) {
             targetLang = langSelect3.value;
+            if (langSelect4) langSelect4.value = targetLang;
         }
 
         const voiceSelect = document.getElementById('voiceSelect');
@@ -409,6 +415,7 @@ class VoiceDubApp {
                 this.state.uiLang
             );
 
+            this.updateVoiceOptions('step3');
             this.renderPhrasesTable();
             document.getElementById('btnGoToStep4').disabled = false;
             document.getElementById('stepNav3').classList.add('completed');
@@ -548,8 +555,9 @@ class VoiceDubApp {
                 if (phrase && phrase.audioUrl) {
                     const a = document.createElement('a');
                     a.href = phrase.audioUrl;
+                    const rowNum = phrase.id !== undefined ? (phrase.id + 1) : (this.state.phrases.indexOf(phrase) + 1);
                     const timeClean = (phrase.start || '00-00').replace(':', '-');
-                    a.download = `phrase_${phrase.id + 1}_${timeClean}.mp3`;
+                    a.download = `phrase_${rowNum}_${timeClean}.mp3`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -636,9 +644,47 @@ class VoiceDubApp {
         }
     }
 
+    getEnglishLangName(rawLang) {
+        if (!rawLang) return "English";
+        const fallbackMap = {
+            "Русский": "Russian",
+            "Английский": "English",
+            "Персидский": "Persian",
+            "Испанский": "Spanish",
+            "Египетский": "Egyptian",
+            "Армянский": "Armenian"
+        };
+        if (typeof CONFIG !== 'undefined' && CONFIG.LANG_FILE_NAMES && CONFIG.LANG_FILE_NAMES[rawLang]) {
+            return CONFIG.LANG_FILE_NAMES[rawLang];
+        }
+        return fallbackMap[rawLang] || rawLang;
+    }
+
+    detectLanguageFromFilename(str) {
+        if (!str) return null;
+        const fn = String(str).toLowerCase();
+
+        const langMap = [
+            { key: "Русский", keywords: ["русский", "russian", "ru"] },
+            { key: "Английский", keywords: ["английский", "english", "en"] },
+            { key: "Персидский", keywords: ["персидский", "persian", "farsi", "fa"] },
+            { key: "Испанский", keywords: ["испанский", "spanish", "es"] },
+            { key: "Египетский", keywords: ["египетский", "egyptian", "arabic", "ar"] },
+            { key: "Армянский", keywords: ["армянский", "armenian", "hy"] }
+        ];
+
+        for (const item of langMap) {
+            if (item.keywords.some(kw => fn.includes(kw))) {
+                return item.key;
+            }
+        }
+        return null;
+    }
+
     async handleTextImport(file, targetField = 'auto') {
         if (!file) return;
         const dict = I18N[this.state.uiLang] || I18N.en;
+        let fileLang = null;
 
         try {
             const textContent = await file.text();
@@ -646,22 +692,31 @@ class VoiceDubApp {
 
             if (file.name.endsWith('.json')) {
                 const parsed = JSON.parse(textContent);
+                let items = [];
                 if (Array.isArray(parsed)) {
-                    importedPhrases = parsed.map((item, idx) => {
-                        const src = item.sourceText || item.text || (targetField === 'sourceText' ? item.content || '' : '');
-                        const tgt = item.targetText || item.translation || (targetField === 'targetText' ? item.content || '' : '');
-
-                        return {
-                            id: idx,
-                            start: item.start || '00:00',
-                            end: item.end || '00:05',
-                            startSec: Transcriber.toSeconds(item.start || '00:00'),
-                            endSec: Transcriber.toSeconds(item.end || '00:05'),
-                            sourceText: targetField === 'targetText' ? (src || '') : (src || item.content || ''),
-                            targetText: targetField === 'sourceText' ? (tgt || '') : (tgt || (targetField === 'targetText' ? item.content || '' : ''))
-                        };
-                    });
+                    items = parsed;
+                } else if (parsed && Array.isArray(parsed.phrases)) {
+                    items = parsed.phrases;
+                    if (parsed.language) {
+                        const jsonLang = this.detectLanguageFromFilename(parsed.language);
+                        if (jsonLang) fileLang = jsonLang;
+                    }
                 }
+
+                importedPhrases = items.map((item, idx) => {
+                    const src = item.sourceText || item.text || (targetField === 'sourceText' ? item.content || '' : '');
+                    const tgt = item.targetText || item.translation || (targetField === 'targetText' ? item.content || '' : '');
+
+                    return {
+                        id: idx,
+                        start: item.start || '00:00',
+                        end: item.end || '00:05',
+                        startSec: Transcriber.toSeconds(item.start || '00:00'),
+                        endSec: Transcriber.toSeconds(item.end || '00:05'),
+                        sourceText: targetField === 'targetText' ? (src || '') : (src || item.content || ''),
+                        targetText: targetField === 'sourceText' ? (tgt || '') : (tgt || (targetField === 'targetText' ? item.content || '' : ''))
+                    };
+                });
             } else {
                 const lines = textContent.split('\n').map(l => l.trim()).filter(Boolean);
                 importedPhrases = lines.map((line, idx) => {
@@ -717,8 +772,13 @@ class VoiceDubApp {
 
                 this.log(1, `${dict.logImportSuccess} ${label} (${importedPhrases.length}) - ${file.name}`, 'success');
 
-                document.getElementById('stepNav2')?.classList.add('completed');
-                document.getElementById('btnGoToStep2').disabled = false;
+                if (this.state.videoFile) {
+                    document.getElementById('stepNav2')?.classList.add('completed');
+                    document.getElementById('btnGoToStep2').disabled = false;
+                } else {
+                    document.getElementById('stepNav2')?.classList.remove('completed');
+                    document.getElementById('btnGoToStep2').disabled = true;
+                }
 
                 if (targetField === 'sourceText' || this.state.phrases.some(p => p.sourceText)) {
                     document.getElementById('btnGoToStep3').disabled = false;
@@ -728,6 +788,23 @@ class VoiceDubApp {
                     document.getElementById('btnGoToStep4').disabled = false;
                     document.getElementById('btnGoToStep5').disabled = false;
                     this.log(1, dict.translationLoadedInfo, 'info');
+                }
+
+                // Auto-detect language from file content or filename if present
+                const detectedLang = fileLang || this.detectLanguageFromFilename(file.name);
+                if (detectedLang) {
+                    if (targetField === 'sourceText' && CONFIG.SOURCE_LANGS[detectedLang]) {
+                        const sourceLangSelect = document.getElementById('sourceLangSelect');
+                        if (sourceLangSelect) sourceLangSelect.value = detectedLang;
+                        this.log(1, `${dict.logDetectedLang} ${this.getEnglishLangName(detectedLang)}`, 'info');
+                    } else if (CONFIG.VOICES[detectedLang]) {
+                        const targetLangSelect = document.getElementById('targetLangSelect');
+                        const targetLangSelectStep4 = document.getElementById('targetLangSelectStep4');
+                        if (targetLangSelect) targetLangSelect.value = detectedLang;
+                        if (targetLangSelectStep4) targetLangSelectStep4.value = detectedLang;
+                        this.updateVoiceOptions('step3');
+                        this.log(1, `${dict.logDetectedLang} ${this.getEnglishLangName(detectedLang)}`, 'info');
+                    }
                 }
             }
         } catch (err) {
@@ -745,8 +822,11 @@ class VoiceDubApp {
 
         const a = document.createElement('a');
         a.href = this.state.mixedAudioUrl;
-        const targetLang = document.getElementById('targetLangSelect')?.value || 'dubbed';
-        a.download = `dubbed_audio_${targetLang}.wav`;
+        const rawLang = document.getElementById('targetLangSelectStep4')?.value 
+                     || document.getElementById('targetLangSelect')?.value 
+                     || 'English';
+        const englishLang = this.getEnglishLangName(rawLang);
+        a.download = `dubbed_audio_${englishLang}.wav`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -773,13 +853,27 @@ class VoiceDubApp {
         let mime = 'text/plain';
         const ext = format === 'json' ? 'json' : 'txt';
 
+        let rawLang = '';
+        if (field === 'sourceText') {
+            rawLang = document.getElementById('sourceLangSelect')?.value || 'Armenian';
+        } else {
+            rawLang = document.getElementById('targetLangSelectStep4')?.value 
+                   || document.getElementById('targetLangSelect')?.value 
+                   || 'English';
+        }
+        const englishLang = this.getEnglishLangName(rawLang);
+        const prefix = field === 'sourceText' ? 'script_original' : 'script_translated';
+
         if (format === 'json') {
-            const data = available.map(p => ({
-                id: p.id,
-                start: p.start,
-                end: p.end,
-                [field]: p[field] || ''
-            }));
+            const data = {
+                language: englishLang,
+                phrases: available.map(p => ({
+                    id: p.id,
+                    start: p.start,
+                    end: p.end,
+                    [field]: p[field] || ''
+                }))
+            };
             content = JSON.stringify(data, null, 2);
             mime = 'application/json';
         } else {
@@ -792,7 +886,7 @@ class VoiceDubApp {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `dubbing_${field}_export.${ext}`;
+        a.download = `${prefix}_${englishLang}.${ext}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -806,17 +900,40 @@ class VoiceDubApp {
             return;
         }
 
-        this.log(5, `${dict.logDownloadIndividual} ${voicedPhrases.length} ${dict.logDownloadIndividualSuffix}`, 'info');
-        voicedPhrases.forEach((phrase, idx) => {
-            setTimeout(() => {
-                const a = document.createElement('a');
-                a.href = phrase.audioUrl;
-                a.download = `phrase_${idx + 1}_${phrase.start.replace(':', '-')}.mp3`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            }, idx * 300);
-        });
+        this.log(5, dict.logPackingZip, 'info');
+
+        try {
+            const filesToZip = [];
+            for (let idx = 0; idx < voicedPhrases.length; idx++) {
+                const phrase = voicedPhrases[idx];
+                const arrayBuf = await phrase.audioBlob.arrayBuffer();
+                const timeClean = (phrase.start || '00-00').replace(':', '-');
+                const rowNum = phrase.id !== undefined ? (phrase.id + 1) : (this.state.phrases.indexOf(phrase) + 1);
+                const fileName = `phrase_${rowNum}_${timeClean}.mp3`;
+                filesToZip.push({
+                    name: fileName,
+                    data: new Uint8Array(arrayBuf)
+                });
+            }
+
+            const zipBlob = ZipBuilder.createZip(filesToZip);
+            const zipUrl = URL.createObjectURL(zipBlob);
+
+            const a = document.createElement('a');
+            a.href = zipUrl;
+            const rawLang = document.getElementById('targetLangSelectStep4')?.value 
+                         || document.getElementById('targetLangSelect')?.value 
+                         || 'English';
+            const englishLang = this.getEnglishLangName(rawLang);
+            a.download = `phrase_audios_${englishLang}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            this.log(5, dict.logZipSuccess, 'success');
+        } catch (err) {
+            this.log(5, `❌ ZIP Error: ${err.message}`, 'error');
+        }
     }
 }
 
