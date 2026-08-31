@@ -28,6 +28,20 @@ export class Translator {
             ? `🌐 Перевод ${total} фраз на ${targetLang} (${langName})...` 
             : `🌐 Translating ${total} phrases into ${targetLang} (${langName})...`);
 
+        // Professional dubbing & localization system instruction
+        const systemInstruction = {
+            parts: [{
+                text: "You are an elite, highly accurate film, documentary, and dialogue localization translator for audio/video dubbing.\n" +
+                      "Your task is to produce strictly faithful, precise, and contextually accurate translations while preserving the exact meaning, speaker tone, grammatical gender, idioms, terminology, numbers, and natural speech rhythm.\n\n" +
+                      "CRITICAL RULES:\n" +
+                      "1. ACCURACY & FIDELITY: Never omit, invent, summarize, or hallucinate content. Translate every phrase accurately.\n" +
+                      "2. CONTEXTUAL COHERENCE: Maintain consistent gender (masculine/feminine), pronouns, honorifics (formal/informal), and narrative continuity across all sequential lines.\n" +
+                      "3. DUBBING FIT: Ensure spoken naturalness and suitable sentence cadence for speech synthesis.\n" +
+                      "4. SCRIPT & ORTHOGRAPHY: Output purely in the native script of the target language (e.g. Cyrillic for Russian, Arabic script for Egyptian/Persian, Latin for English/Spanish). Never transliterate.\n" +
+                      "5. OUTPUT FORMAT: Output ONLY the requested JSON array of strings with the exact same number of items and order."
+            }]
+        };
+
         for (let i = 0; i < total; i += batchSize) {
             const batch = phrases.slice(i, i + batchSize);
             const sourceTexts = batch.map(p => p.sourceText);
@@ -36,18 +50,41 @@ export class Translator {
                 ? `🌐 Перевод фраз ${i + 1}–${Math.min(i + batchSize, total)} из ${total}...` 
                 : `🌐 Translating phrases ${i + 1}–${Math.min(i + batchSize, total)} of ${total}...`);
 
+            // Build dialogue context from previous and upcoming phrases
+            let contextHeader = "";
+            if (i > 0) {
+                const prevPhrases = phrases.slice(Math.max(0, i - 3), i);
+                contextHeader += "--- PREVIOUS DIALOGUE CONTEXT (for continuity reference only, DO NOT re-translate) ---\n";
+                prevPhrases.forEach(p => {
+                    contextHeader += `[Source: "${p.sourceText}"] -> [Translated: "${p.targetText || ''}"]\n`;
+                });
+                contextHeader += "\n";
+            }
+
+            if (i + batchSize < total) {
+                const nextPhrases = phrases.slice(i + batchSize, Math.min(total, i + batchSize + 2));
+                contextHeader += "--- UPCOMING DIALOGUE (for context reference if sentences continue across cuts) ---\n";
+                nextPhrases.forEach(p => {
+                    contextHeader += `[Upcoming: "${p.sourceText}"]\n`;
+                });
+                contextHeader += "\n";
+            }
+
             const prompt = 
-                `Translate these ${sourceTexts.length} ${sourceLangName} phrases into ${langName}.\n` +
-                `Return ONLY a JSON array of strings in the exact same order.\n` +
-                `Use natural, fluent language. Do NOT transliterate — use native script.\n\n` +
-                `Phrases:\n${JSON.stringify(sourceTexts)}`;
+                `${contextHeader}` +
+                `--- PHRASES TO TRANSLATE (${sourceTexts.length} items from ${sourceLangName} to ${langName}) ---\n` +
+                `Return ONLY a JSON array of strings containing the exact translations for these ${sourceTexts.length} phrases in the exact same order.\n\n` +
+                `Phrases:\n${JSON.stringify(sourceTexts, null, 2)}`;
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
             const requestBody = {
+                systemInstruction: systemInstruction,
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: {
-                    responseMimeType: "application/json"
+                    responseMimeType: "application/json",
+                    temperature: 0.1,
+                    topP: 0.95
                 }
             };
 
@@ -68,9 +105,13 @@ export class Translator {
                     }
 
                     const jsonRes = await response.json();
-                    const rawContent = jsonRes.candidates?.[0]?.content?.parts?.[0]?.text;
+                    let rawContent = jsonRes.candidates?.[0]?.content?.parts?.[0]?.text;
 
                     if (rawContent) {
+                        rawContent = rawContent.trim();
+                        if (rawContent.startsWith('```')) {
+                            rawContent = rawContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+                        }
                         const result = JSON.parse(rawContent);
                         if (Array.isArray(result) && result.length === sourceTexts.length) {
                             translatedList = result;
