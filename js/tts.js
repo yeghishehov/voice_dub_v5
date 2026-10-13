@@ -9,41 +9,75 @@ export class EdgeTTS {
      * @returns {Promise<Blob>}
      */
     static async synthesize(text, voice = "ru-RU-DmitryNeural", rate = "+0%") {
-        // Priority 1: Call /api/tts endpoint (works on Vercel Serverless Function & local server.py)
-        try {
-            const res = await fetch('/api/tts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, voice, rate })
-            });
-
-            if (res.ok) {
-                const blob = await res.blob();
-                if (blob && blob.size > 0) return blob;
+        const endpoints = ['/api/tts'];
+        const isSecure = typeof window !== 'undefined' && window.location && window.location.protocol === 'https:';
+        if (!isSecure) {
+            const defaultPorts = ['8080', '8081', '8082', '8083'];
+            for (const port of defaultPorts) {
+                const h1 = `http://localhost:${port}/api/tts`;
+                const h2 = `http://127.0.0.1:${port}/api/tts`;
+                if (!endpoints.includes(h1)) endpoints.push(h1);
+                if (!endpoints.includes(h2)) endpoints.push(h2);
             }
-        } catch (err) {
-            console.warn("/api/tts endpoint unavailable, trying direct WebSocket...", err);
         }
 
-        // Priority 2: Direct Client-Side Browser WebSocket fallback
-        return new Promise((resolve, reject) => {
-            const TRUSTED_TOKEN = "6A5AA1D4EA5942B4195C714257E2E89A";
-            const wsUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_TOKEN}`;
+        let lastServerError = null;
+        for (const ep of endpoints) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 12000);
 
+                const res = await fetch(ep, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice, rate }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (res.ok) {
+                    const blob = await res.blob();
+                    if (blob && blob.size > 0) return blob;
+                } else {
+                    const errData = await res.json().catch(() => null);
+                    if (errData && errData.error) {
+                        lastServerError = errData.error;
+                        console.warn(`[EdgeTTS] Endpoint ${ep} error:`, errData.error);
+                    }
+                }
+            } catch (err) {
+                // Candidate endpoint unreachable or aborted, try next
+            }
+        }
+
+        // Priority 2: Direct Client-Side Browser WebSocket with dynamic Sec-MS-GEC
+        const secMsGec = await this.generateSecMsGec();
+        const TRUSTED_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+        const requestId = this.generateGuid();
+
+        let wsUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_TOKEN}&ConnectionId=${requestId}`;
+        if (secMsGec) {
+            wsUrl += `&Sec-MS-GEC=${secMsGec}&Sec-MS-GEC-Version=1-130.0.2849.68`;
+        }
+
+        return new Promise((resolve, reject) => {
             let ws;
             try {
                 ws = new WebSocket(wsUrl);
             } catch (err) {
-                return reject(new Error(`Edge TTS Connection failed: ${err.message}`));
+                return reject(new Error(lastServerError 
+                    ? `Edge TTS Error: ${lastServerError}` 
+                    : `Edge TTS Connection failed: ${err.message}`));
             }
 
             ws.binaryType = "arraybuffer";
             const audioChunks = [];
-            const requestId = this.generateGuid();
 
             const timeoutId = setTimeout(() => {
                 try { ws.close(); } catch (e) { }
-                reject(new Error("Microsoft Edge TTS WebSocket timeout"));
+                reject(new Error(lastServerError
+                    ? `Edge TTS Timeout (Сервер: ${lastServerError})`
+                    : "Microsoft Edge TTS WebSocket timeout (нет ответа от Microsoft)"));
             }, 12000);
 
             ws.onopen = () => {
@@ -69,7 +103,7 @@ export class EdgeTTS {
                     });
                 ws.send(speechConfig);
 
-                // 2. Send SSML request
+                // 2. Send SSML request using valid prosody tag
                 const escapedText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const langLocale = (voice && voice.includes('-')) ? voice.split('-').slice(0, 2).join('-') : 'en-US';
                 const ssml =
@@ -78,7 +112,7 @@ export class EdgeTTS {
                     `Content-Type:application/ssml+xml\r\n` +
                     `Path:ssml\r\n\r\n` +
                     `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${langLocale}'>` +
-                    `<voice name='${voice}'><rate value='${rate}'>${escapedText}</rate></voice>` +
+                    `<voice name='${voice}'><prosody rate='${rate}'>${escapedText}</prosody></voice>` +
                     `</speak>`;
                 ws.send(ssml);
             };
@@ -105,11 +139,31 @@ export class EdgeTTS {
                 }
             };
 
-            ws.onerror = (err) => {
+            ws.onerror = () => {
                 clearTimeout(timeoutId);
-                reject(new Error("Microsoft Edge TTS WebSocket network error"));
+                const detail = lastServerError 
+                    ? `Сервер сообщил: "${lastServerError}". Попробуйте обновить: pip install -U edge-tts`
+                    : "Прямое подключение к Microsoft заблокировано. Убедитесь, что запущен 'python server.py' на http://localhost:8080";
+                reject(new Error(`Microsoft Edge TTS WebSocket network error (${detail})`));
             };
         });
+    }
+
+    static async generateSecMsGec() {
+        try {
+            const WIN_EPOCH = 11644473600n;
+            const nowUnixSec = BigInt(Math.floor(Date.now() / 1000));
+            let ticks = nowUnixSec + WIN_EPOCH;
+            ticks -= (ticks % 300n);
+            const TRUSTED_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+            const strToHash = `${ticks}${TRUSTED_TOKEN}`;
+            const enc = new TextEncoder();
+            const hashBuf = await crypto.subtle.digest("SHA-256", enc.encode(strToHash));
+            const hashArr = Array.from(new Uint8Array(hashBuf));
+            return hashArr.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+        } catch (e) {
+            return null;
+        }
     }
 
     static generateGuid() {
@@ -163,7 +217,7 @@ export class TTSManager {
                     : `❌ Edge TTS error for phrase #${phrase.id}: ${err.message}`);
             }
 
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 600));
         }
 
         if (count === 0) {

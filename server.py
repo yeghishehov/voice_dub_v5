@@ -14,16 +14,33 @@ if hasattr(sys, 'stdout') and hasattr(sys.stdout, 'buffer') and getattr(sys.stdo
     except Exception:
         pass
 
+import subprocess
 try:
     import edge_tts
-except ImportError:
-    print("Installing edge-tts...")
-    import subprocess
-    subprocess.run([sys.executable, "-m", "pip", "install", "edge-tts"])
+    from importlib.metadata import version
+    ver = version("edge-tts")
+    print(f"Loaded edge-tts v{ver}")
+    # Microsoft recently enforced new token handshakes; versions < 7.2 get 403 Forbidden
+    parts = ver.split('.')
+    major_ver = int(parts[0]) if len(parts) > 0 and parts[0].isdigit() else 0
+    minor_ver = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+    if major_ver < 7 or (major_ver == 7 and minor_ver < 2):
+        print(f"Upgrading edge-tts (v{ver} -> latest) to resolve 403 Forbidden...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "edge-tts"])
+        import importlib
+        importlib.reload(edge_tts)
+except Exception:
+    print("Installing/upgrading latest edge-tts...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "edge-tts"])
     import edge_tts
 
 PORT = 8080
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+
+
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    daemon_threads = True
+    allow_reuse_address = True
 
 
 class VoiceDubHandler(http.server.SimpleHTTPRequestHandler):
@@ -55,41 +72,58 @@ class VoiceDubHandler(http.server.SimpleHTTPRequestHandler):
                     self.send_error(400, "Text parameter is empty")
                     return
 
+                print(f"🎙️ [Server /api/tts] Synthesizing '{text[:35]}...' ({voice}, {rate})", flush=True)
+
                 async def generate():
                     communicate = edge_tts.Communicate(text=text, voice=voice, rate=rate)
                     mp3_data = bytearray()
                     async for chunk in communicate.stream():
-                        if chunk["type"] == "audio":
-                            mp3_data.extend(chunk["data"])
+                        if chunk.get("type") == "audio":
+                            mp3_data.extend(chunk.get("data", b""))
                     return bytes(mp3_data)
 
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                mp3_bytes = loop.run_until_complete(generate())
-                loop.close()
+                async def generate_with_retry():
+                    last_err = None
+                    for attempt in range(3):
+                        try:
+                            res = await asyncio.wait_for(generate(), timeout=20.0)
+                            if res and len(res) > 0:
+                                return res
+                        except Exception as e:
+                            last_err = e
+                            print(f"⚠️ [Server /api/tts] Attempt {attempt + 1} failed: {e}. Retrying in 1s...", flush=True)
+                            await asyncio.sleep(1.0)
+                    raise last_err or Exception("Empty audio received from Edge TTS")
+
+                mp3_bytes = asyncio.run(generate_with_retry())
 
                 self.send_response(200)
                 self.send_header('Content-Type', 'audio/mpeg')
                 self.send_header('Content-Length', str(len(mp3_bytes)))
                 self.end_headers()
                 self.wfile.write(mp3_bytes)
+                print(f"✅ [Server /api/tts] Successfully generated {len(mp3_bytes)} bytes", flush=True)
 
             except Exception as e:
+                err_msg_str = str(e)
+                print(f"❌ [Server /api/tts] Error: {err_msg_str}", flush=True)
+                import traceback
+                traceback.print_exc()
+
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                err_msg = json.dumps({'error': str(e)}).encode('utf-8')
+                err_msg = json.dumps({'error': err_msg_str}).encode('utf-8')
                 self.wfile.write(err_msg)
         else:
             self.send_error(404, "Endpoint not found")
 
 
 if __name__ == '__main__':
-    socketserver.TCPServer.allow_reuse_address = True
     server = None
     for try_port in [8080, 8081, 8082, 8083]:
         try:
-            server = socketserver.TCPServer(("", try_port), VoiceDubHandler)
+            server = ThreadedTCPServer(("", try_port), VoiceDubHandler)
             PORT = try_port
             break
         except OSError:

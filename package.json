@@ -4,6 +4,7 @@
   "description": "Client-side Web Audio & AI Video Dubbing Application",
   "type": "module",
   "scripts": {
+    "build": "echo 'Static build ready'",
     "start": "python server.py",
     "dev": "python server.py",
     "serve": "npx serve ."
