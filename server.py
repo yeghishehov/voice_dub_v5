@@ -67,15 +67,16 @@ class VoiceDubHandler(http.server.SimpleHTTPRequestHandler):
                 text = data.get('text', '').strip()
                 voice = data.get('voice', 'ru-RU-DmitryNeural')
                 rate = data.get('rate', '+0%')
+                pitch = data.get('pitch', '+0Hz')
 
                 if not text:
                     self.send_error(400, "Text parameter is empty")
                     return
 
-                print(f"🎙️ [Server /api/tts] Synthesizing '{text[:35]}...' ({voice}, {rate})", flush=True)
+                print(f"🎙️ [Server /api/tts] Synthesizing '{text[:35]}...' ({voice}, rate={rate}, pitch={pitch})", flush=True)
 
                 async def generate():
-                    communicate = edge_tts.Communicate(text=text, voice=voice, rate=rate)
+                    communicate = edge_tts.Communicate(text=text, voice=voice, rate=rate, pitch=pitch)
                     mp3_data = bytearray()
                     async for chunk in communicate.stream():
                         if chunk.get("type") == "audio":

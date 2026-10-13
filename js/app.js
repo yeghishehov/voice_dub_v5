@@ -517,6 +517,10 @@ class VoiceDubApp {
         if (thRate) {
             thRate.style.display = isStep4 ? '' : 'none';
         }
+        const thPitch = document.querySelector('.col-pitch');
+        if (thPitch) {
+            thPitch.style.display = isStep4 ? '' : 'none';
+        }
 
         const targetLang = document.getElementById('targetLangSelect')?.value || 'Русский';
         const voices = CONFIG.VOICES[targetLang] || CONFIG.VOICES["Русский"];
@@ -528,6 +532,9 @@ class VoiceDubApp {
             }
             if (!phrase.rate) {
                 phrase.rate = '+0%';
+            }
+            if (!phrase.pitch) {
+                phrase.pitch = '+0Hz';
             }
 
             const tr = document.createElement('tr');
@@ -544,6 +551,19 @@ class VoiceDubApp {
                 const label = r === '+0%' ? '0% (норм)' : r;
                 const selected = (phrase.rate === r) ? 'selected' : '';
                 rateOptionsHtml += `<option value="${r}" ${selected}>${label}</option>`;
+            }
+
+            const pitches = [
+                { val: '-20Hz', label: '-20Hz (Бас)' },
+                { val: '-10Hz', label: '-10Hz (Низкий)' },
+                { val: '+0Hz', label: '0Hz (Норм)' },
+                { val: '+10Hz', label: '+10Hz (Высокий)' },
+                { val: '+20Hz', label: '+20Hz (Звонкий)' }
+            ];
+            let pitchOptionsHtml = '';
+            for (const p of pitches) {
+                const selected = (phrase.pitch === p.val) ? 'selected' : '';
+                pitchOptionsHtml += `<option value="${p.val}" ${selected}>${p.label}</option>`;
             }
 
             tr.innerHTML = `
@@ -564,6 +584,11 @@ class VoiceDubApp {
                 <td class="col-rate" style="${isStep4 ? '' : 'display: none;'}">
                     <select class="form-select select-phrase-rate" data-id="${phrase.id}" style="padding: 0.25rem 0.3rem; font-size: 0.8rem; width: 100%;">
                         ${rateOptionsHtml}
+                    </select>
+                </td>
+                <td class="col-pitch" style="${isStep4 ? '' : 'display: none;'}">
+                    <select class="form-select select-phrase-pitch" data-id="${phrase.id}" style="padding: 0.25rem 0.3rem; font-size: 0.8rem; width: 100%;">
+                        ${pitchOptionsHtml}
                     </select>
                 </td>
                 <td style="text-align: center; white-space: nowrap;">
@@ -606,6 +631,17 @@ class VoiceDubApp {
                 const phrase = this.state.phrases.find(p => p.id === id);
                 if (phrase) {
                     phrase.rate = e.target.value;
+                }
+            });
+        });
+
+        // Add per-phrase pitch change listeners
+        tbody.querySelectorAll('.select-phrase-pitch').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const id = parseInt(e.target.getAttribute('data-id'));
+                const phrase = this.state.phrases.find(p => p.id === id);
+                if (phrase) {
+                    phrase.pitch = e.target.value;
                 }
             });
         });
@@ -661,10 +697,11 @@ class VoiceDubApp {
 
         const voice = phrase.voice || document.getElementById('voiceSelect')?.value || "ru-RU-DmitryNeural";
         const rate = phrase.rate || '+0%';
-        this.log(4, `${dict.logSynthesizingPhrase}${phrase.id + 1}: "${text.substring(0, 30)}..." (${voice}, ${rate})`, 'info');
+        const pitch = phrase.pitch || '+0Hz';
+        this.log(4, `${dict.logSynthesizingPhrase}${phrase.id + 1}: "${text.substring(0, 30)}..." (${voice}, ${rate}, ${pitch})`, 'info');
 
         try {
-            const mp3Blob = await EdgeTTS.synthesize(text, voice, rate);
+            const mp3Blob = await EdgeTTS.synthesize(text, voice, rate, pitch);
             const audioUrl = URL.createObjectURL(mp3Blob);
             const durationSec = await TTSManager.getAudioDuration(audioUrl);
 

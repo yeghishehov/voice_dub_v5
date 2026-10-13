@@ -8,7 +8,7 @@ export class EdgeTTS {
      * @param {string} rate e.g. "+0%", "+10%", "-10%"
      * @returns {Promise<Blob>}
      */
-    static async synthesize(text, voice = "ru-RU-DmitryNeural", rate = "+0%") {
+    static async synthesize(text, voice = "ru-RU-DmitryNeural", rate = "+0%", pitch = "+0Hz") {
         const endpoints = ['/api/tts'];
         const isSecure = typeof window !== 'undefined' && window.location && window.location.protocol === 'https:';
         if (!isSecure) {
@@ -30,7 +30,7 @@ export class EdgeTTS {
                 const res = await fetch(ep, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, voice, rate }),
+                    body: JSON.stringify({ text, voice, rate, pitch }),
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);
@@ -112,7 +112,7 @@ export class EdgeTTS {
                     `Content-Type:application/ssml+xml\r\n` +
                     `Path:ssml\r\n\r\n` +
                     `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${langLocale}'>` +
-                    `<voice name='${voice}'><prosody rate='${rate}'>${escapedText}</prosody></voice>` +
+                    `<voice name='${voice}'><prosody rate='${rate}' pitch='${pitch}'>${escapedText}</prosody></voice>` +
                     `</speak>`;
                 ws.send(ssml);
             };
@@ -198,11 +198,12 @@ export class TTSManager {
             const text = phrase.targetText.trim();
             const voiceToUse = phrase.voice || voice;
             const rateToUse = phrase.rate || '+0%';
+            const pitchToUse = phrase.pitch || '+0Hz';
 
-            progressCb(`🎙️ [${i + 1}/${total}] Edge TTS: "${text.substring(0, 40)}..." (${voiceToUse}, ${rateToUse})`);
+            progressCb(`🎙️ [${i + 1}/${total}] Edge TTS: "${text.substring(0, 40)}..." (${voiceToUse}, ${rateToUse}, ${pitchToUse})`);
 
             try {
-                const mp3Blob = await EdgeTTS.synthesize(text, voiceToUse, rateToUse);
+                const mp3Blob = await EdgeTTS.synthesize(text, voiceToUse, rateToUse, pitchToUse);
                 const audioUrl = URL.createObjectURL(mp3Blob);
 
                 const durationSec = await this.getAudioDuration(audioUrl);

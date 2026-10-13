@@ -15,7 +15,7 @@ const HEADERS = {
     'Accept-Language': 'en-US,en;q=0.9'
 };
 
-function synthesizeOnce(text, voice, rate, timeoutMs = 15000) {
+function synthesizeOnce(text, voice, rate, pitch = '+0Hz', timeoutMs = 15000) {
     return new Promise((resolve, reject) => {
         const requestId = crypto.randomUUID().replace(/-/g, '');
         const secMsGec = generateSecMsGecV2();
@@ -60,11 +60,12 @@ function synthesizeOnce(text, voice, rate, timeoutMs = 15000) {
                 .replace(/>/g, '&gt;');
             const langLocale = (voice && voice.includes('-')) ? voice.split('-').slice(0, 2).join('-') : 'en-US';
             const prosodyRate = rate || '+0%';
+            const prosodyPitch = pitch || '+0Hz';
 
             const ssml =
                 `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${langLocale}'>` +
                 `<voice name='${voice}'>` +
-                `<prosody rate='${prosodyRate}'>${escapedText}</prosody>` +
+                `<prosody rate='${prosodyRate}' pitch='${prosodyPitch}'>${escapedText}</prosody>` +
                 `</voice>` +
                 `</speak>`;
 
@@ -143,7 +144,7 @@ export default async function handler(req, res) {
             try { body = JSON.parse(body); } catch(e) {}
         }
 
-        const { text, voice = 'ru-RU-DmitryNeural', rate = '+0%' } = body || {};
+        const { text, voice = 'ru-RU-DmitryNeural', rate = '+0%', pitch = '+0Hz' } = body || {};
 
         if (!text || !text.trim()) {
             return res.status(400).json({ error: 'Text parameter required' });
@@ -152,7 +153,7 @@ export default async function handler(req, res) {
         let lastErr = null;
         for (let attempt = 0; attempt < 2; attempt++) {
             try {
-                const buffer = await synthesizeOnce(text.trim(), voice, rate);
+                const buffer = await synthesizeOnce(text.trim(), voice, rate, pitch);
                 if (buffer && buffer.length > 0) {
                     res.setHeader('Content-Type', 'audio/mpeg');
                     res.setHeader('Content-Length', buffer.length);

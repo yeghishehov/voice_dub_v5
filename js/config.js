@@ -4,15 +4,24 @@ export const CONFIG = {
     DEFAULT_API_KEY: "",
     MODEL_ID: "gemini-3.1-flash-lite", // Matching VOICE_DUB_V4
 
-    // Voice mappings (Edge TTS voices matching VOICE_DUB_V4)
+    // Voice mappings (Edge TTS neural voices)
     VOICES: {
         "Русский": {
             "Мужской (Dmitry)": "ru-RU-DmitryNeural",
             "Женский (Svetlana)": "ru-RU-SvetlanaNeural",
+            "Мужской Multilingual (Andrew)": "en-US-AndrewMultilingualNeural",
+            "Мужской Multilingual (Brian)": "en-US-BrianMultilingualNeural",
+            "Женский Multilingual (Emma)": "en-US-EmmaMultilingualNeural",
+            "Женский Multilingual (Ava)": "en-US-AvaMultilingualNeural",
         },
         "Английский": {
-            "Мужской (Guy)": "en-US-GuyNeural",
+            "Женский (Aria)": "en-US-AriaNeural",
             "Женский (Jenny)": "en-US-JennyNeural",
+            "Мужской (Guy)": "en-US-GuyNeural",
+            "Мужской (Andrew Multilingual)": "en-US-AndrewMultilingualNeural",
+            "Мужской (Brian Multilingual)": "en-US-BrianMultilingualNeural",
+            "Мужской (Christopher)": "en-US-ChristopherNeural",
+            "Женский (Emma Multilingual)": "en-US-EmmaMultilingualNeural",
         },
         "Персидский": {
             "Мужской (Farid)": "fa-IR-FaridNeural",
@@ -21,6 +30,7 @@ export const CONFIG = {
         "Испанский": {
             "Мужской (Alvaro)": "es-ES-AlvaroNeural",
             "Женский (Elvira)": "es-ES-ElviraNeural",
+            "Женский (Ximena)": "es-ES-XimenaNeural",
         },
         "Египетский": {
             "Мужской (Shakir)": "ar-EG-ShakirNeural",
