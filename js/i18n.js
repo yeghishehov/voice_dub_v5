@@ -67,6 +67,7 @@ export const I18N = {
         ttsLangLabel: "Voiceover Language:",
         defaultVoiceLabel: "Default Speaker Voice:",
         startTTSBtn: "🎙️ Synthesize All Phrases (Edge TTS)",
+        autoRateBtn: "⚡ Auto-fit Speed",
         nextExportBtn: "Next: Export ➡️",
 
         // Phrases Table
@@ -76,10 +77,12 @@ export const I18N = {
         thSource: "Original Text (Editable)",
         thTarget: "Translation (Stage 3)",
         thVoice: "Speaker Voice",
+        thRate: "Speed",
         thAudio: "Audio",
         playTooltip: "Play",
         downloadSingleAudioTooltip: "Download phrase audio (.mp3)",
         reTtsTooltip: "Generate / Regenerate phrase",
+        logAutoRateCalculated: "⚡ Speech speed calculated for phrases based on timecodes. Adjusted:",
 
         // Stage 5: Export Hub
         stage5Header: "Stage 5: Export Hub",
@@ -213,6 +216,7 @@ export const I18N = {
         ttsLangLabel: "Язык озвучки:",
         defaultVoiceLabel: "Голос диктора по умолчанию:",
         startTTSBtn: "🎙️ Озвучить все фразы (Edge TTS)",
+        autoRateBtn: "⚡ Автоподбор скорости",
         nextExportBtn: "Далее: Экспорт ➡️",
 
         // Phrases Table
@@ -222,10 +226,12 @@ export const I18N = {
         thSource: "Исходный текст (можно редактировать)",
         thTarget: "Перевод (Этап 3)",
         thVoice: "Голос диктора",
+        thRate: "Скорость",
         thAudio: "Аудио",
         playTooltip: "Прослушать",
         downloadSingleAudioTooltip: "Скачать аудио фразы (.mp3)",
         reTtsTooltip: "Сгенерировать / Перегенерировать фразу",
+        logAutoRateCalculated: "⚡ Рассчитана скорость чтения по таймкодам. Скорректировано фраз:",
 
         // Stage 5: Export Hub
         stage5Header: "Этап 5: Центр экспорта",

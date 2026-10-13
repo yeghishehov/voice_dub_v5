@@ -186,6 +186,7 @@
                             <th data-i18n="thSource">Original Text (Editable)</th>
                             <th data-i18n="thTarget">Translation (Stage 3)</th>
                             <th class="col-voice" style="width: 170px; display: none;" data-i18n="thVoice">Speaker Voice</th>
+                            <th class="col-rate" style="width: 120px; display: none;" data-i18n="thRate">Speed</th>
                             <th style="width: 110px;" data-i18n="thAudio">Audio</th>
                         </tr>
                     </thead>
@@ -274,9 +275,12 @@
                 Speech synthesis is powered directly by Microsoft Edge TTS neural voices. Preview each phrase in the table.
             </p>
 
-            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
                 <button class="btn btn-primary" id="btnStartTTS" data-i18n="startTTSBtn">
                     🎙️ Synthesize All Phrases (Edge TTS)
+                </button>
+                <button class="btn btn-secondary" id="btnAutoRate" data-i18n="autoRateBtn">
+                    ⚡ Auto-fit Speed
                 </button>
             </div>
 

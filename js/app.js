@@ -119,6 +119,7 @@ class VoiceDubApp {
 
         // Stage 4: TTS
         document.getElementById('btnStartTTS')?.addEventListener('click', () => this.runTTS());
+        document.getElementById('btnAutoRate')?.addEventListener('click', () => this.autoCalculateAllRates());
 
         // Stage 5: Export Hub
         document.getElementById('btnAssembleDubbedTrack')?.addEventListener('click', () => this.runAssembly());
@@ -456,6 +457,48 @@ class VoiceDubApp {
         }
     }
 
+    calculateOptimalRate(phrase) {
+        const text = (phrase.targetText || phrase.sourceText || '').trim();
+        if (!text) return '+0%';
+
+        const startSec = (phrase.startSec !== undefined && !isNaN(phrase.startSec)) 
+            ? phrase.startSec 
+            : Transcriber.toSeconds(phrase.start || '00:00');
+        const endSec = (phrase.endSec !== undefined && !isNaN(phrase.endSec)) 
+            ? phrase.endSec 
+            : Transcriber.toSeconds(phrase.end || '00:00');
+        const allocatedSec = Math.max(0.6, endSec - startSec);
+
+        // Average normal speaking speed for Russian/English: ~13.5 characters per second
+        const estimatedNormalDuration = Math.max(0.8, text.length / 13.5);
+
+        // If audio was already synthesized once, use the exact measured audio duration!
+        const neededSec = phrase.audioDuration ? phrase.audioDuration : estimatedNormalDuration;
+        const ratio = neededSec / allocatedSec;
+
+        if (ratio >= 1.45) return '+50%';
+        if (ratio >= 1.35) return '+40%';
+        if (ratio >= 1.25) return '+30%';
+        if (ratio >= 1.18) return '+20%';
+        if (ratio >= 1.10) return '+15%';
+        if (ratio >= 1.05) return '+10%';
+        if (ratio <= 0.70) return '-10%';
+        return '+0%';
+    }
+
+    autoCalculateAllRates() {
+        if (!this.state.phrases || this.state.phrases.length === 0) return;
+        const dict = I18N[this.state.uiLang] || I18N.en;
+        let adjustedCount = 0;
+        this.state.phrases.forEach(phrase => {
+            const optimal = this.calculateOptimalRate(phrase);
+            if (optimal !== '+0%') adjustedCount++;
+            phrase.rate = optimal;
+        });
+        this.renderPhrasesTable();
+        this.log(4, `${dict.logAutoRateCalculated} ${adjustedCount}/${this.state.phrases.length}`, 'info');
+    }
+
     renderPhrasesTable() {
         const dict = I18N[this.state.uiLang] || I18N.en;
         const box = document.getElementById('phrasesTableBox');
@@ -470,6 +513,10 @@ class VoiceDubApp {
         if (thVoice) {
             thVoice.style.display = isStep4 ? '' : 'none';
         }
+        const thRate = document.querySelector('.col-rate');
+        if (thRate) {
+            thRate.style.display = isStep4 ? '' : 'none';
+        }
 
         const targetLang = document.getElementById('targetLangSelect')?.value || 'Русский';
         const voices = CONFIG.VOICES[targetLang] || CONFIG.VOICES["Русский"];
@@ -479,6 +526,9 @@ class VoiceDubApp {
             if (!phrase.voice) {
                 phrase.voice = defaultVoice;
             }
+            if (!phrase.rate) {
+                phrase.rate = '+0%';
+            }
 
             const tr = document.createElement('tr');
 
@@ -486,6 +536,14 @@ class VoiceDubApp {
             for (const [voiceLabel, voiceId] of Object.entries(voices)) {
                 const selected = phrase.voice === voiceId ? 'selected' : '';
                 voiceOptionsHtml += `<option value="${voiceId}" ${selected}>${voiceLabel}</option>`;
+            }
+
+            const rates = ['-20%', '-10%', '+0%', '+10%', '+15%', '+20%', '+25%', '+30%', '+40%', '+50%'];
+            let rateOptionsHtml = '';
+            for (const r of rates) {
+                const label = r === '+0%' ? '0% (норм)' : r;
+                const selected = (phrase.rate === r) ? 'selected' : '';
+                rateOptionsHtml += `<option value="${r}" ${selected}>${label}</option>`;
             }
 
             tr.innerHTML = `
@@ -501,6 +559,11 @@ class VoiceDubApp {
                 <td class="col-voice" style="${isStep4 ? '' : 'display: none;'}">
                     <select class="form-select select-phrase-voice" data-id="${phrase.id}" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; width: 100%;">
                         ${voiceOptionsHtml}
+                    </select>
+                </td>
+                <td class="col-rate" style="${isStep4 ? '' : 'display: none;'}">
+                    <select class="form-select select-phrase-rate" data-id="${phrase.id}" style="padding: 0.25rem 0.3rem; font-size: 0.8rem; width: 100%;">
+                        ${rateOptionsHtml}
                     </select>
                 </td>
                 <td style="text-align: center; white-space: nowrap;">
@@ -532,6 +595,17 @@ class VoiceDubApp {
                 const phrase = this.state.phrases.find(p => p.id === id);
                 if (phrase) {
                     phrase.voice = e.target.value;
+                }
+            });
+        });
+
+        // Add per-phrase rate change listeners
+        tbody.querySelectorAll('.select-phrase-rate').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const id = parseInt(e.target.getAttribute('data-id'));
+                const phrase = this.state.phrases.find(p => p.id === id);
+                if (phrase) {
+                    phrase.rate = e.target.value;
                 }
             });
         });
@@ -586,10 +660,11 @@ class VoiceDubApp {
         }
 
         const voice = phrase.voice || document.getElementById('voiceSelect')?.value || "ru-RU-DmitryNeural";
-        this.log(4, `${dict.logSynthesizingPhrase}${phrase.id + 1}: "${text.substring(0, 30)}..." (${voice})`, 'info');
+        const rate = phrase.rate || '+0%';
+        this.log(4, `${dict.logSynthesizingPhrase}${phrase.id + 1}: "${text.substring(0, 30)}..." (${voice}, ${rate})`, 'info');
 
         try {
-            const mp3Blob = await EdgeTTS.synthesize(text, voice);
+            const mp3Blob = await EdgeTTS.synthesize(text, voice, rate);
             const audioUrl = URL.createObjectURL(mp3Blob);
             const durationSec = await TTSManager.getAudioDuration(audioUrl);
 
@@ -713,6 +788,8 @@ class VoiceDubApp {
                         end: item.end || '00:05',
                         startSec: Transcriber.toSeconds(item.start || '00:00'),
                         endSec: Transcriber.toSeconds(item.end || '00:05'),
+                        voice: item.voice || undefined,
+                        rate: item.rate || '+0%',
                         sourceText: targetField === 'targetText' ? (src || '') : (src || item.content || ''),
                         targetText: targetField === 'sourceText' ? (tgt || '') : (tgt || (targetField === 'targetText' ? item.content || '' : ''))
                     };
@@ -871,6 +948,8 @@ class VoiceDubApp {
                     id: p.id,
                     start: p.start,
                     end: p.end,
+                    voice: p.voice || undefined,
+                    rate: p.rate || undefined,
                     [field]: p[field] || ''
                 }))
             };

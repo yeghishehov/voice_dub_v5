@@ -197,11 +197,12 @@ export class TTSManager {
             const phrase = validPhrases[i];
             const text = phrase.targetText.trim();
             const voiceToUse = phrase.voice || voice;
+            const rateToUse = phrase.rate || '+0%';
 
-            progressCb(`🎙️ [${i + 1}/${total}] Edge TTS: "${text.substring(0, 40)}..." (${voiceToUse})`);
+            progressCb(`🎙️ [${i + 1}/${total}] Edge TTS: "${text.substring(0, 40)}..." (${voiceToUse}, ${rateToUse})`);
 
             try {
-                const mp3Blob = await EdgeTTS.synthesize(text, voiceToUse);
+                const mp3Blob = await EdgeTTS.synthesize(text, voiceToUse, rateToUse);
                 const audioUrl = URL.createObjectURL(mp3Blob);
 
                 const durationSec = await this.getAudioDuration(audioUrl);
