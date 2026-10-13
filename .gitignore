@@ -1,0 +1,5 @@
+node_modules/
+test_tts.js
+__pycache__/
+*.pyc
+.vercel
