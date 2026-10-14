@@ -23,30 +23,35 @@ export class EdgeTTS {
 
         let lastServerError = null;
         for (const ep of endpoints) {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 12000);
+            for (let tryIdx = 0; tryIdx < 2; tryIdx++) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 16000);
 
-                const res = await fetch(ep, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, voice, rate, pitch }),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
+                    const res = await fetch(ep, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text, voice, rate, pitch }),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
 
-                if (res.ok) {
-                    const blob = await res.blob();
-                    if (blob && blob.size > 0) return blob;
-                } else {
-                    const errData = await res.json().catch(() => null);
-                    if (errData && errData.error) {
-                        lastServerError = errData.error;
-                        console.warn(`[EdgeTTS] Endpoint ${ep} error:`, errData.error);
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        if (blob && blob.size > 0) return blob;
+                    } else {
+                        const errData = await res.json().catch(() => null);
+                        if (errData && errData.error) {
+                            lastServerError = errData.error;
+                            console.warn(`[EdgeTTS] Endpoint ${ep} error (attempt ${tryIdx + 1}):`, errData.error);
+                        }
                     }
+                } catch (err) {
+                    // Candidate endpoint unreachable or aborted
                 }
-            } catch (err) {
-                // Candidate endpoint unreachable or aborted, try next
+                if (tryIdx === 0) {
+                    await new Promise(r => setTimeout(r, 700));
+                }
             }
         }
 
@@ -219,7 +224,7 @@ export class TTSManager {
                     : `❌ Edge TTS error for phrase #${phrase.id}: ${err.message}`);
             }
 
-            await new Promise(r => setTimeout(r, 600));
+            await new Promise(r => setTimeout(r, 800));
         }
 
         if (count === 0) {
