@@ -78,8 +78,15 @@ function synthesizeOnce(text, voice, rate, pitch = '+0Hz', timeoutMs = 15000) {
             const prosodyRate = rate || '+0%';
             const prosodyPitch = pitch || '+0Hz';
 
+            let langLocale = 'en-US';
+            if (/[а-яёА-ЯЁ]/.test(cleaned)) {
+                langLocale = 'ru-RU';
+            } else if (voice && voice.includes('-')) {
+                langLocale = voice.split('-').slice(0, 2).join('-');
+            }
+
             const ssml =
-                `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>` +
+                `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${langLocale}'>` +
                 `<voice name='${voice}'>` +
                 `<prosody pitch='${prosodyPitch}' rate='${prosodyRate}' volume='+0%'>${escapedText}</prosody>` +
                 `</voice>` +
