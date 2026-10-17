@@ -16,7 +16,7 @@ class VoiceDubApp {
             audioBuffer: null,
             phrases: [],
             apiKey: localStorage.getItem('gemini_api_key') || CONFIG.DEFAULT_API_KEY,
-            uiLang: localStorage.getItem('ui_lang') || 'en',
+            uiLang: localStorage.getItem('ui_lang') || 'ru',
             currentStep: 1,
             mixedAudioBlob: null,
             mixedAudioUrl: null,
@@ -42,12 +42,43 @@ class VoiceDubApp {
             });
         }
 
-        // Language switcher button
-        const langToggleBtn = document.getElementById('langToggleBtn');
-        if (langToggleBtn) {
-            langToggleBtn.addEventListener('click', () => {
-                const nextLang = this.state.uiLang === 'en' ? 'ru' : 'en';
-                this.setLanguage(nextLang);
+        // Custom Language Dropdown
+        const langDropdown = document.getElementById('langDropdown');
+        const langTrigger = document.getElementById('langDropdownTrigger');
+        const langMenu = document.getElementById('langDropdownMenu');
+
+        if (langDropdown && langTrigger && langMenu) {
+            langTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = langDropdown.classList.toggle('open');
+                langTrigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+
+            langMenu.querySelectorAll('.lang-dropdown-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const selectedLang = item.getAttribute('data-lang');
+                    if (selectedLang) {
+                        this.setLanguage(selectedLang);
+                    }
+                    langDropdown.classList.remove('open');
+                    langTrigger.setAttribute('aria-expanded', 'false');
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!langDropdown.contains(e.target)) {
+                    langDropdown.classList.remove('open');
+                    langTrigger.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && langDropdown.classList.contains('open')) {
+                    langDropdown.classList.remove('open');
+                    langTrigger.setAttribute('aria-expanded', 'false');
+                    langTrigger.focus();
+                }
             });
         }
 
@@ -283,6 +314,7 @@ class VoiceDubApp {
         if (dict.docTitle) {
             document.title = dict.docTitle;
         }
+        document.documentElement.lang = this.state.uiLang;
 
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
@@ -298,10 +330,24 @@ class VoiceDubApp {
             }
         });
 
-        const langToggleBtn = document.getElementById('langToggleBtn');
-        if (langToggleBtn) {
-            langToggleBtn.textContent = dict.langToggleBtn;
+        // Update Custom Language Dropdown UI
+        const isRu = this.state.uiLang === 'ru';
+        const langCurrentLabel = document.getElementById('langCurrentLabel');
+        const langTrigger = document.getElementById('langDropdownTrigger');
+
+        if (langCurrentLabel) {
+            langCurrentLabel.textContent = isRu ? 'RU' : 'EN';
         }
+        if (langTrigger) {
+            langTrigger.title = isRu ? 'Текущий язык: Русский (нажмите для смены)' : 'Current language: English (click to change)';
+        }
+
+        document.querySelectorAll('.lang-dropdown-item').forEach(item => {
+            const itemLang = item.getAttribute('data-lang');
+            const isActive = itemLang === this.state.uiLang;
+            item.classList.toggle('active', isActive);
+            item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
 
         const btnSelectFile = document.getElementById('btnSelectFile');
         if (btnSelectFile) {

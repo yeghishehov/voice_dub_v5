@@ -20,9 +20,36 @@
             <span class="brand-badge" data-i18n="appSubtitle">Client-side Web Audio & AI Video Dubbing</span>
         </div>
         <div class="header-actions" style="display: flex; align-items: center; gap: 1rem;">
-            <button class="btn btn-secondary" id="langToggleBtn" style="padding: 0.4rem 0.85rem; font-weight: 600; font-size: 0.9rem;">
-                🌐 RU
-            </button>
+            <!-- Custom Language Dropdown -->
+            <div class="lang-dropdown" id="langDropdown">
+                <button type="button" class="lang-dropdown-trigger" id="langDropdownTrigger" aria-haspopup="listbox" aria-expanded="false" title="Язык интерфейса / Interface Language">
+                    <svg class="lang-globe-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                        <path d="M2 12h20"></path>
+                    </svg>
+                    <span class="lang-current-label" id="langCurrentLabel">RU</span>
+                    <svg class="lang-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="lang-dropdown-menu" id="langDropdownMenu" role="listbox">
+                    <button type="button" class="lang-dropdown-item active" data-lang="ru" role="option" aria-selected="true">
+                        <span class="lang-badge">RU</span>
+                        <span class="lang-item-text">Русский</span>
+                        <svg class="lang-item-check" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M2.5 7.5L5.5 10.5L11.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="lang-dropdown-item" data-lang="en" role="option" aria-selected="false">
+                        <span class="lang-badge">EN</span>
+                        <span class="lang-item-text">English</span>
+                        <svg class="lang-item-check" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M2.5 7.5L5.5 10.5L11.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
             <div class="api-key-box">
                 <span style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="apiKeyLabel">Gemini API Key:</span>
                 <input type="password" id="apiKeyInput" placeholder="Paste your Gemini API key (AIzaSy...)" data-i18n-placeholder="apiKeyPlaceholder">

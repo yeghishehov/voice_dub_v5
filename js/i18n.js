@@ -10,7 +10,7 @@ export const I18N = {
         appSubtitle: "Client-side Web Audio & AI Video Dubbing",
         apiKeyLabel: "Gemini API Key:",
         apiKeyPlaceholder: "Paste your Gemini API key (AIzaSy...)",
-        langToggleBtn: "🌐 RU",
+        langToggleBtn: "🌐 EN",
 
         // Stepper Stage Titles & Subtitles
         step1Title: "1. Import",
@@ -160,7 +160,7 @@ export const I18N = {
         appSubtitle: "Клиентский дубляж видео на базе ИИ",
         apiKeyLabel: "API ключ Gemini:",
         apiKeyPlaceholder: "Вставьте ваш API ключ Gemini (AIzaSy...)",
-        langToggleBtn: "🌐 EN",
+        langToggleBtn: "🌐 RU",
 
         // Stepper Stage Titles & Subtitles
         step1Title: "1. Импорт",
