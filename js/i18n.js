@@ -11,22 +11,48 @@ export const I18N = {
         apiKeyLabel: "Gemini API Key:",
         apiKeyPlaceholder: "Paste your Gemini API key (AIzaSy...)",
         langToggleBtn: "🌐 EN",
+        importHeaderBtn: "Import",
+        importModalTitle: "Import Video & Scripts",
+        closeModalBtn: "Close",
+        proceedToTranscriptionBtn: "Done / Go to Transcription ➡️",
+        noVideoTitle: "No video selected yet",
+        noVideoSub: "Click Import in the header or button below to select a video or script",
+        videoLoadedTitle: "Video loaded:",
+        videoReadySub: "Ready for speech transcription",
+        changeVideoBtn: "🔄 Change video / script",
+        openImportBtn: "📥 Import",
 
-        // Stepper Stage Titles & Subtitles
-        step1Title: "1. Import",
-        step1Sub: "Files & Text",
-        step2Title: "2. Transcription",
-        step2Sub: "Speech STT",
-        step3Title: "3. Translation",
-        step3Sub: "Translate script",
-        step4Title: "4. Voiceover (TTS)",
-        step4Sub: "Speech TTS",
-        step5Title: "5. Export Hub",
-        step5Sub: "Audio & Script",
+        // Stepper Titles & Subtitles
+        step1Title: "Script & Translation",
+        step1Sub: "STT & Translation",
+        step2Title: "Voiceover (TTS)",
+        step2Sub: "Speech synthesis & Export",
 
-        // Stage 1: Import
-        stage1Header: "Stage 1: Import Video & Scripts",
-        stage1Desc: "Upload your video/audio file or directly import ready original/translated script files to skip steps.",
+        // Script & Translation
+        stage1Header: "Script & Translation (Gemini Flash)",
+        stage1Desc: "Extract speech with timestamps and translate phrases via Gemini Flash. You can also edit and add text directly in the table.",
+        sourceLangLabel: "Source Language:",
+        targetLangLabel: "Target Language:",
+        startTranscriptionBtn: "⚡ Start Transcription (Gemini)",
+        startTranslationBtn: "🌐 Translate Script (Gemini)",
+        nextVoiceoverBtn: "Next: Voiceover ➡️",
+        backBtn: "⬅️ Back",
+        backToScriptBtn: "⬅️ Back to Script",
+
+        // Voiceover (TTS)
+        stage2Header: "Speech Synthesis (Edge TTS)",
+        stage2Desc: "Speech synthesis is powered directly by Microsoft Edge TTS neural voices. Preview each phrase in the table.",
+        ttsLangLabel: "Voiceover Language:",
+        defaultVoiceLabel: "Default Speaker Voice:",
+        startTTSBtn: "🎙️ Synthesize All Phrases (Edge TTS)",
+        autoRateBtn: "⚡ Auto-fit Speed",
+        nextExportBtn: "Next: Export ➡️",
+
+        // Stage 3: Export Hub
+        stage3Header: "Stage 3: Export Hub",
+        stage3Desc: "Download all project assets in your preferred format.",
+
+        // Import Modal & File Info
         dropVideoTitle: "Select Video / Audio file",
         dropVideoDesc: "MP4, WebM, MOV, AVI, MKV or MP3, WAV, M4A",
         selectVideoBtn: "🎬 Select video file on computer",
@@ -34,7 +60,6 @@ export const I18N = {
         selectedFileLabel: "✅ Selected file:",
         importOrigTextBtn: "📝 Import Original Script",
         importTransTextBtn: "🌐 Import Translated Script",
-        nextTranscriptionBtn: "Next: Transcription ➡️",
 
         // File Info Card
         videoPreviewTitle: "Loaded File",
@@ -46,40 +71,28 @@ export const I18N = {
         statusExtracting: "Extracting audio...",
         specAudioContainer: "Audio file / Container",
 
-        // Stage 2: Transcription
-        stage2Header: "Stage 2: Speech Transcription (Gemini Flash)",
-        stage2Desc: "Click \"Start Transcription\" to extract speech with timestamps via Gemini API. Edit any phrase in the table.",
-        sourceLangLabel: "Source Language:",
-        startTranscriptionBtn: "⚡ Start Transcription (Gemini)",
-        nextTranslationBtn: "Next: Translation ➡️",
-        backBtn: "⬅️ Back",
-
-        // Stage 3: Translation
-        stage3Header: "Stage 3: Translation to Target Language",
-        stage3Desc: "Translation is performed in batches using Gemini API. Modify translation text in the table anytime.",
-        targetLangLabel: "Target Language:",
-        startTranslationBtn: "🌐 Translate Script (Gemini)",
-        nextVoiceoverBtn: "Next: Voiceover ➡️",
-
-        // Stage 4: Voiceover (TTS)
-        stage4Header: "Stage 4: Speech Synthesis (Edge TTS)",
-        stage4Desc: "Speech synthesis is powered directly by Microsoft Edge TTS neural voices. Preview each phrase in the table.",
-        ttsLangLabel: "Voiceover Language:",
-        defaultVoiceLabel: "Default Speaker Voice:",
-        startTTSBtn: "🎙️ Synthesize All Phrases (Edge TTS)",
-        autoRateBtn: "⚡ Auto-fit Speed",
-        nextExportBtn: "Next: Export ➡️",
-
         // Phrases Table
+        phrasesTableTitle: "Phrases & Subtitles Table",
+        phrasesCountLabel: "phrases",
+        addRowBtn: "➕ Add Row",
+        insertRowBelowTooltip: "Insert row below",
+        deleteRowTooltip: "Delete this row",
+        confirmDeleteRow: "Are you sure you want to delete row",
+        translateRowTooltip: "Translate this phrase (Gemini)",
+        translatingRow: "Translating phrase #",
+        translatedRowSuccess: "Phrase translated successfully!",
+        emptyRowSourceAlert: "Source text for this phrase is empty!",
+        emptyTableMessage: "No phrases in the table yet. Click \"➕ Add Row\" or import a file above.",
         thNum: "#",
         thStart: "Start",
         thEnd: "End",
         thSource: "Original Text (Editable)",
-        thTarget: "Translation (Stage 3)",
+        thTarget: "Translation",
         thVoice: "Speaker Voice",
         thRate: "Speed",
         thPitch: "Pitch",
         thAudio: "Audio",
+        thActions: "Row",
         playTooltip: "Play",
         downloadSingleAudioTooltip: "Download phrase audio (.mp3)",
         reTtsTooltip: "Generate / Regenerate phrase",
@@ -91,13 +104,13 @@ export const I18N = {
         cardStitchedTitle: "Stitched Audio (.wav)",
         cardStitchedDesc: "Single dubbing audio track synced with timestamps for CapCut.",
         downloadAudioBtn: "🎵 Download Dubbed Audio (.wav)",
-        cardOrigTitle: "Original Text",
-        cardOrigDesc: "Subtitles / transcription of original speech.",
-        cardTransTitle: "Translated Text",
-        cardTransDesc: "Translated script with timestamps.",
-        cardIndivTitle: "Individual Audio Archive (.zip)",
-        cardIndivDesc: "ZIP archive containing separate MP3 audio clips for all phrases.",
-        exportIndivBtn: "📦 Download Audio Archive (.zip)",
+        // Table Exports & Tooltips
+        exportOrigTxtTooltip: "Download original text",
+        exportTransTxtTooltip: "Download translated text",
+        exportIndivTooltip: "Download audio archive",
+        exportOrigTxtBtn: "📥 Download Text",
+        exportTransTxtBtn: "📥 Download Translation",
+        exportIndivBtn: "📥 Download Audio Archive",
         backToVoiceoverBtn: "⬅️ Back to Voiceover",
 
         // Language Select Options
@@ -111,14 +124,23 @@ export const I18N = {
         // Footer
         footerText: "VOICE DUB v5 — Pure Frontend Client-Side Video Dubbing Application",
 
-        // Alert Messages
+        // Alert Messages & Action Warnings
+        warningModalTitle: "Action Required",
+        understoodBtn: "Understood",
         noPhrasesAlert: "No phrases available! Please import or transcribe speech first.",
-        missingOrigTextAlert: "Original text missing! Complete Stage 2 (Transcription) or import original script.",
-        missingTransTextAlert: "Translated text missing! Complete Stage 3 (Translation) or import translated script.",
-        missingAudioBlobAlert: "Dubbed audio track is not generated yet! Run Stage 4 (Voiceover) first.",
-        missingIndividualAudioAlert: "Run Stage 4 (Voiceover) first to generate phrase audio files!",
+        missingOrigTextAlert: "Original text missing! Complete transcription or import original script.",
+        missingTransTextAlert: "Translated text missing! Complete translation or import translated script.",
+        missingAudioBlobAlert: "Dubbed audio track is not generated yet! Run voiceover first.",
+        missingIndividualAudioAlert: "Run voiceover first to generate phrase audio files!",
         emptyPhraseAlert: "Phrase text is empty!",
         enterApiKeyAlert: "🔑 Please enter your Gemini API Key in the top field of the page!",
+        noVideoForTranscriptionWarning: "No video file selected! Please load a video or audio file via the \"Import\" button before starting speech transcription.",
+        noPhrasesForTranslationWarning: "There are no phrases to translate in the table! First transcribe audio from a video, import a script, or add rows to the table.",
+        noSourceTextForTranslationWarning: "The \"Original Text\" column is empty! Please enter or transcribe source text before translating.",
+        noPhrasesForTtsWarning: "There are no phrases in the table yet! Please transcribe video or import a script first.",
+        noTargetTextForTtsWarning: "No translated text found for speech synthesis! Please run translation or fill in the \"Translation\" column.",
+        noPhrasesForAutoRateWarning: "There are no phrases in the table to calculate speech speed!",
+        goToVoiceoverBtn: "Go to Voiceover ➡️",
 
         // Log & Unit Labels
         logFileLoaded: "📂 Loaded file:",
@@ -147,7 +169,7 @@ export const I18N = {
         logPackingZip: "📦 Packing phrase audio files into ZIP archive...",
         logZipSuccess: "🎉 ZIP archive with phrase audio clips created and downloaded!",
         logDetectedLang: "🌐 Auto-detected language from filename:",
-        translationLoadedInfo: "✨ Translation loaded! Stages 4 (Voiceover) and 5 (Export) are now available.",
+        translationLoadedInfo: "✨ Translation loaded! Stages 2 (Voiceover) and 3 (Export) are now available.",
         minsLabel: "min",
         secsLabel: "sec"
     },
@@ -161,22 +183,48 @@ export const I18N = {
         apiKeyLabel: "API ключ Gemini:",
         apiKeyPlaceholder: "Вставьте ваш API ключ Gemini (AIzaSy...)",
         langToggleBtn: "🌐 RU",
+        importHeaderBtn: "Импорт",
+        importModalTitle: "Импорт видео и сценариев",
+        closeModalBtn: "Закрыть",
+        proceedToTranscriptionBtn: "Готово / К транскрибации ➡️",
+        noVideoTitle: "Видеофайл еще не выбран",
+        noVideoSub: "Нажмите «Импорт» в шапке или кнопку ниже для выбора видео или сценария",
+        videoLoadedTitle: "Видео загружено:",
+        videoReadySub: "Готово к транскрибации речи",
+        changeVideoBtn: "🔄 Сменить видео / текст",
+        openImportBtn: "📥 Импорт",
 
-        // Stepper Stage Titles & Subtitles
-        step1Title: "1. Импорт",
-        step1Sub: "Файлы и Текст",
-        step2Title: "2. Транскрибация",
-        step2Sub: "Транскрибация",
-        step3Title: "3. Перевод",
-        step3Sub: "Перевод сценария",
-        step4Title: "4. Озвучка (TTS)",
-        step4Sub: "Синтез речи",
-        step5Title: "5. Центр экспорта",
-        step5Sub: "Аудио и Текст",
+        // Stepper Titles & Subtitles
+        step1Title: "Текст и Перевод",
+        step1Sub: "Транскрибация и перевод",
+        step2Title: "Озвучка (TTS)",
+        step2Sub: "Синтез речи и экспорт",
 
-        // Stage 1: Import
-        stage1Header: "Этап 1: Импорт медиафайла и текстов",
-        stage1Desc: "Загрузите исходное видео/аудио или сразу импортируйте готовый текст оригинала/перевода для пропуска этапов.",
+        // Script & Translation
+        stage1Header: "Сценарий и перевод речи (Gemini Flash)",
+        stage1Desc: "Распознавайте речь с таймкодами из видео и переводите фразы через Gemini Flash. Редактируйте текст прямо в таблице.",
+        sourceLangLabel: "Исходный язык речи:",
+        targetLangLabel: "Целевой язык:",
+        startTranscriptionBtn: "⚡ Начать транскрибацию (Gemini)",
+        startTranslationBtn: "🌐 Перевести фразы (Gemini)",
+        nextVoiceoverBtn: "Далее: Озвучка ➡️",
+        backBtn: "⬅️ Назад",
+        backToScriptBtn: "⬅️ Назад к тексту",
+
+        // Voiceover (TTS)
+        stage2Header: "Синтез речи (Edge TTS)",
+        stage2Desc: "Синтез речи выполняется нейросетевыми голосами Microsoft Edge TTS. Прослушивайте каждую фразу в таблице.",
+        ttsLangLabel: "Язык озвучки:",
+        defaultVoiceLabel: "Голос диктора по умолчанию:",
+        startTTSBtn: "🎙️ Озвучить все фразы (Edge TTS)",
+        autoRateBtn: "⚡ Автоподбор скорости",
+        nextExportBtn: "Далее: Экспорт ➡️",
+
+        // Stage 3: Export Hub
+        stage3Header: "Этап 3: Центр экспорта",
+        stage3Desc: "Скачивайте любые готовые материалы вашего проекта в нужном формате.",
+
+        // Import Modal & File Info
         dropVideoTitle: "Выберите файл Видео / Аудио",
         dropVideoDesc: "MP4, WebM, MOV, AVI, MKV или MP3, WAV, M4A",
         selectVideoBtn: "🎬 Выбрать видеофайл на компьютере",
@@ -184,7 +232,6 @@ export const I18N = {
         selectedFileLabel: "✅ Выбран файл:",
         importOrigTextBtn: "📝 Импортировать оригинальный текст",
         importTransTextBtn: "🌐 Импортировать переведенный текст",
-        nextTranscriptionBtn: "Далее: Транскрибация ➡️",
 
         // File Info Card
         videoPreviewTitle: "Загруженный файл",
@@ -196,40 +243,28 @@ export const I18N = {
         statusExtracting: "В процессе извлечения...",
         specAudioContainer: "Аудиофайл / Контейнер",
 
-        // Stage 2: Transcription
-        stage2Header: "Этап 2: Транскрибация речи (Gemini Flash)",
-        stage2Desc: "Нажмите \"Начать транскрибацию\" для извлечения речи с таймкодами через Gemini API. Редактируйте фразы в таблице.",
-        sourceLangLabel: "Исходный язык речи:",
-        startTranscriptionBtn: "⚡ Начать транскрибацию (Gemini)",
-        nextTranslationBtn: "Далее: Перевод ➡️",
-        backBtn: "⬅️ Назад",
-
-        // Stage 3: Translation
-        stage3Header: "Этап 3: Перевод на целевой язык",
-        stage3Desc: "Перевод выполняется пакетами через Gemini API. Редактируйте текст перевода в таблице в любое время.",
-        targetLangLabel: "Целевой язык:",
-        startTranslationBtn: "🌐 Перевести фразы (Gemini)",
-        nextVoiceoverBtn: "Далее: Озвучка ➡️",
-
-        // Stage 4: Voiceover (TTS)
-        stage4Header: "Этап 4: Синтез речи (Edge TTS)",
-        stage4Desc: "Синтез речи выполняется нейросетевыми голосами Microsoft Edge TTS. Прослушивайте каждую фразу в таблице.",
-        ttsLangLabel: "Язык озвучки:",
-        defaultVoiceLabel: "Голос диктора по умолчанию:",
-        startTTSBtn: "🎙️ Озвучить все фразы (Edge TTS)",
-        autoRateBtn: "⚡ Автоподбор скорости",
-        nextExportBtn: "Далее: Экспорт ➡️",
-
         // Phrases Table
+        phrasesTableTitle: "Таблица фраз и субтитров",
+        phrasesCountLabel: "фраз",
+        addRowBtn: "➕ Добавить строку",
+        insertRowBelowTooltip: "Вставить строку ниже",
+        deleteRowTooltip: "Удалить эту строку",
+        confirmDeleteRow: "Вы уверены, что хотите удалить строку",
+        translateRowTooltip: "Перевести эту строку (Gemini)",
+        translatingRow: "Перевод фразы #",
+        translatedRowSuccess: "Фраза успешно переведена!",
+        emptyRowSourceAlert: "Исходный текст этой фразы пуст!",
+        emptyTableMessage: "В таблице пока нет строк. Нажмите «➕ Добавить строку» или импортируйте файл выше.",
         thNum: "#",
         thStart: "Начало",
         thEnd: "Конец",
         thSource: "Исходный текст (можно редактировать)",
-        thTarget: "Перевод (Этап 3)",
+        thTarget: "Перевод",
         thVoice: "Голос диктора",
         thRate: "Скорость",
         thPitch: "Тон",
         thAudio: "Аудио",
+        thActions: "Строка",
         playTooltip: "Прослушать",
         downloadSingleAudioTooltip: "Скачать аудио фразы (.mp3)",
         reTtsTooltip: "Сгенерировать / Перегенерировать фразу",
@@ -241,13 +276,13 @@ export const I18N = {
         cardStitchedTitle: "Склеенное аудио (.wav)",
         cardStitchedDesc: "Единый аудиофайл дубляжа со скомпонованными фразами по таймкодам для CapCut.",
         downloadAudioBtn: "🎵 Скачать аудиодорожку (.wav)",
-        cardOrigTitle: "Оригинальный текст",
-        cardOrigDesc: "Субтитры / расшифровка исходной речи.",
-        cardTransTitle: "Переведенный текст",
-        cardTransDesc: "Переведенный сценарий с таймкодами.",
-        cardIndivTitle: "Архив отдельных аудио (.zip)",
-        cardIndivDesc: "ZIP архив со всеми отдельными MP3 аудиофайлами фраз.",
-        exportIndivBtn: "📦 Скачать архив аудио (.zip)",
+        // Table Exports & Tooltips
+        exportOrigTxtTooltip: "Скачать оригинальный текст",
+        exportTransTxtTooltip: "Скачать перевод",
+        exportIndivTooltip: "Скачать архив аудио",
+        exportOrigTxtBtn: "📥 Скачать текст",
+        exportTransTxtBtn: "📥 Скачать перевод",
+        exportIndivBtn: "📥 Скачать архив аудио",
         backToVoiceoverBtn: "⬅️ Назад к озвучке",
 
         // Language Select Options
@@ -261,14 +296,23 @@ export const I18N = {
         // Footer
         footerText: "VOICE DUB v5 — Клиентское веб-приложение для дубляжа видео на ИИ",
 
-        // Alert Messages
+        // Alert Messages & Action Warnings
+        warningModalTitle: "Требуется действие",
+        understoodBtn: "Понятно",
         noPhrasesAlert: "Нет фраз для экспорта! Сначала выполните импорт или транскрибацию.",
-        missingOrigTextAlert: "Оригинальный текст отсутствует! Выполните этап 2 (Транскрибация) или импортируйте оригинальный текст на этапе 1.",
-        missingTransTextAlert: "Переведенный текст отсутствует! Выполните этап 3 (Перевод) или импортируйте переведенный текст на этапе 1.",
-        missingAudioBlobAlert: "Склеенная аудиодорожка еще не скомпонована! Выполните этап 4 (Озвучка).",
-        missingIndividualAudioAlert: "Сначала выполните этап 4 (Озвучка) для генерации аудиофайлов фраз!",
+        missingOrigTextAlert: "Оригинальный текст отсутствует! Выполните транскрибацию или импортируйте текст.",
+        missingTransTextAlert: "Переведенный текст отсутствует! Выполните перевод или импортируйте текст.",
+        missingAudioBlobAlert: "Склеенная аудиодорожка еще не скомпонована! Сначала выполните озвучку.",
+        missingIndividualAudioAlert: "Сначала выполните озвучку для генерации аудиофайлов фраз!",
         emptyPhraseAlert: "Текст фразы пуст!",
         enterApiKeyAlert: "🔑 Пожалуйста, введите ваш Gemini API ключ в верхнем поле страницы!",
+        noVideoForTranscriptionWarning: "Видеофайл еще не выбран! Чтобы начать распознавание речи, сначала загрузите видео через кнопку «Импорт».",
+        noPhrasesForTranslationWarning: "В таблице нет фраз для перевода! Сначала выполните транскрибацию видео, импортируйте текст или добавьте строки в таблицу.",
+        noSourceTextForTranslationWarning: "Колонка «Исходный текст» пуста! Введите или распознайте исходный текст перед запуском перевода.",
+        noPhrasesForTtsWarning: "В таблице пока нет фраз для озвучки! Сначала выполните транскрибацию или импортируйте текст на первом этапе.",
+        noTargetTextForTtsWarning: "Нет переведенного текста для синтеза речи! Переведите фразы через кнопку «Перевести фразы» или введите текст в колонку «Перевод».",
+        noPhrasesForAutoRateWarning: "В таблице пока нет фраз для автоматического расчета скорости речи!",
+        goToVoiceoverBtn: "Далее: Озвучка ➡️",
 
         // Log & Unit Labels
         logFileLoaded: "📂 Загружен файл:",
@@ -297,7 +341,7 @@ export const I18N = {
         logPackingZip: "📦 Упаковка аудиофайлов фраз в ZIP архив...",
         logZipSuccess: "🎉 ZIP архив с аудиофайлами фраз успешно создан и скачан!",
         logDetectedLang: "🌐 Автоматически определен язык из имени файла:",
-        translationLoadedInfo: "✨ Загружен перевод! Доступны этапы 4 (Озвучка) и 5 (Экспорт)",
+        translationLoadedInfo: "✨ Загружен перевод! Доступны этапы 2 (Озвучка) и 3 (Экспорт)",
         minsLabel: "мин",
         secsLabel: "сек"
     }

@@ -28,6 +28,8 @@ class VoiceDubApp {
 
         this.initUI();
         this.updateUiLanguage();
+        this.renderPhrasesTable();
+        this.updateButtonStates();
     }
 
     initUI() {
@@ -82,8 +84,52 @@ class VoiceDubApp {
             });
         }
 
-        // Stepper Navigation
-        for (let i = 1; i <= 5; i++) {
+        // Import Modal Trigger & Controls
+        document.getElementById('openImportModalBtn')?.addEventListener('click', () => this.openImportModal());
+        document.getElementById('closeImportModalBtn')?.addEventListener('click', () => this.closeImportModal());
+        document.getElementById('btnCancelImport')?.addEventListener('click', () => this.closeImportModal());
+        document.getElementById('btnConfirmImport')?.addEventListener('click', () => {
+            this.closeImportModal();
+            this.goToStep(1);
+        });
+        document.getElementById('btnOpenImportFromBanner')?.addEventListener('click', () => this.openImportModal());
+
+        const importModal = document.getElementById('importModal');
+        if (importModal) {
+            importModal.addEventListener('click', (e) => {
+                if (e.target === importModal) {
+                    this.closeImportModal();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && importModal?.classList.contains('open')) {
+                this.closeImportModal();
+            }
+        });
+
+        // Warning / Action Required Modal Controls
+        document.getElementById('closeWarningModalBtn')?.addEventListener('click', () => this.closeWarningModal());
+        document.getElementById('btnConfirmWarningModal')?.addEventListener('click', () => this.closeWarningModal());
+
+        const warningModal = document.getElementById('warningModal');
+        if (warningModal) {
+            warningModal.addEventListener('click', (e) => {
+                if (e.target === warningModal) {
+                    this.closeWarningModal();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && warningModal?.classList.contains('open')) {
+                this.closeWarningModal();
+            }
+        });
+
+        // Stepper Navigation (2 Stages)
+        for (let i = 1; i <= 2; i++) {
             const stepNav = document.getElementById(`stepNav${i}`);
             if (stepNav) {
                 stepNav.addEventListener('click', () => {
@@ -94,7 +140,7 @@ class VoiceDubApp {
             }
         }
 
-        // Stage 1: Native Video & Text File Input
+        // Native Video & Text File Inputs inside Import Modal
         const videoInput = document.getElementById('videoFileInput');
         if (videoInput) {
             videoInput.addEventListener('change', (e) => {
@@ -122,19 +168,23 @@ class VoiceDubApp {
             });
         }
 
-        document.getElementById('btnGoToStep2')?.addEventListener('click', () => this.goToStep(2));
+        // Stage Transitions (2 Stages)
+        document.getElementById('btnGoToStep2')?.addEventListener('click', () => {
+            const hasPhrases = this.state.phrases && this.state.phrases.length > 0;
+            const hasText = hasPhrases && this.state.phrases.some(p => (p.targetText && p.targetText.trim().length > 0) || (p.sourceText && p.sourceText.trim().length > 0));
+            if (!hasText && !this.state.videoFile) {
+                const dict = I18N[this.state.uiLang] || I18N.en;
+                this.showWarning(dict.noPhrasesForTtsWarning, () => this.openImportModal(), dict.openImportBtn || '📥 Импорт');
+                return;
+            }
+            this.goToStep(2);
+        });
         document.getElementById('btnBackToStep1')?.addEventListener('click', () => this.goToStep(1));
-        document.getElementById('btnGoToStep3')?.addEventListener('click', () => this.goToStep(3));
-        document.getElementById('btnBackToStep2')?.addEventListener('click', () => this.goToStep(2));
-        document.getElementById('btnGoToStep4')?.addEventListener('click', () => this.goToStep(4));
-        document.getElementById('btnBackToStep3')?.addEventListener('click', () => this.goToStep(3));
-        document.getElementById('btnGoToStep5')?.addEventListener('click', () => this.goToStep(5));
-        document.getElementById('btnBackToStep4')?.addEventListener('click', () => this.goToStep(4));
 
-        // Stage 2: Transcription
+        // Stage 1: Transcription
         document.getElementById('btnStartTranscription')?.addEventListener('click', () => this.runTranscription());
 
-        // Stage 3 & 4 Language & Voice Selection
+        // Stage 1 & 2 Language & Voice Selection
         const targetLangSelect = document.getElementById('targetLangSelect');
         if (targetLangSelect) {
             targetLangSelect.addEventListener('change', () => this.updateVoiceOptions('step3'));
@@ -145,37 +195,181 @@ class VoiceDubApp {
             targetLangSelectStep4.addEventListener('change', () => this.updateVoiceOptions('step4'));
         }
 
+        const voiceSelect = document.getElementById('voiceSelect');
+        if (voiceSelect) {
+            voiceSelect.addEventListener('change', () => {
+                const newVoice = voiceSelect.value;
+                if (this.state.phrases && this.state.phrases.length > 0) {
+                    this.state.phrases.forEach(p => {
+                        p.voice = newVoice;
+                    });
+                    this.renderPhrasesTable();
+                }
+            });
+        }
+
         this.updateVoiceOptions();
         document.getElementById('btnStartTranslation')?.addEventListener('click', () => this.runTranslation());
 
-        // Stage 4: TTS
+        // Stage 2: TTS
         document.getElementById('btnStartTTS')?.addEventListener('click', () => this.runTTS());
         document.getElementById('btnAutoRate')?.addEventListener('click', () => this.autoCalculateAllRates());
 
-        // Stage 5: Export Hub
-        document.getElementById('btnAssembleDubbedTrack')?.addEventListener('click', () => this.runAssembly());
-        document.getElementById('btnDownloadAudio')?.addEventListener('click', () => this.downloadDubbedAudio());
+        // Table Export Actions (Header Icons & Footer Buttons)
+        const triggerOrigTxt = () => this.exportText('sourceText', 'txt');
+        const triggerTransTxt = () => this.exportText('targetText', 'txt');
+        const triggerAudioZip = () => this.exportIndividualAudio();
 
-        document.getElementById('btnExportOrigJson')?.addEventListener('click', () => this.exportText('sourceText', 'json'));
-        document.getElementById('btnExportOrigTxt')?.addEventListener('click', () => this.exportText('sourceText', 'txt'));
-        document.getElementById('btnExportTransJson')?.addEventListener('click', () => this.exportText('targetText', 'json'));
-        document.getElementById('btnExportTransTxt')?.addEventListener('click', () => this.exportText('targetText', 'txt'));
-        document.getElementById('btnExportIndividualAudio')?.addEventListener('click', () => this.exportIndividualAudio());
+        document.getElementById('btnExportOrigHeader')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            triggerOrigTxt();
+        });
+        document.getElementById('btnExportTransHeader')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            triggerTransTxt();
+        });
+        document.getElementById('btnExportZipHeader')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            triggerAudioZip();
+        });
+
+        document.getElementById('btnExportOrigFooter')?.addEventListener('click', triggerOrigTxt);
+        document.getElementById('btnExportTransFooter')?.addEventListener('click', triggerTransTxt);
+        document.getElementById('btnExportZipFooter')?.addEventListener('click', triggerAudioZip);
+
+        // Fallbacks for any other export triggers
+        document.getElementById('btnExportOrigTxt')?.addEventListener('click', triggerOrigTxt);
+        document.getElementById('btnExportTransTxt')?.addEventListener('click', triggerTransTxt);
+        document.getElementById('btnExportIndividualAudio')?.addEventListener('click', triggerAudioZip);
+
+        // Phrases Table Toolbar & Actions
+        document.getElementById('btnAddRowBtn')?.addEventListener('click', () => this.addPhrase());
+        document.getElementById('btnBottomAddRow')?.addEventListener('click', () => this.addPhrase());
+    }
+
+    openImportModal() {
+        const modal = document.getElementById('importModal');
+        if (modal) {
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    closeImportModal() {
+        const modal = document.getElementById('importModal');
+        if (modal) {
+            modal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    }
+
+    showWarning(message, actionCallback = null, actionBtnText = null, title = null) {
+        const dict = I18N[this.state.uiLang] || I18N.en;
+        const modal = document.getElementById('warningModal');
+        const titleEl = document.getElementById('warningModalTitle');
+        const msgEl = document.getElementById('warningModalMessage');
+        const actionBox = document.getElementById('warningModalActionBox');
+        const actionBtn = document.getElementById('warningModalActionBtn');
+
+        if (!modal || !msgEl) {
+            alert(message);
+            return;
+        }
+
+        if (titleEl) {
+            titleEl.textContent = title || dict.warningModalTitle || 'Требуется действие';
+        }
+        msgEl.textContent = message;
+
+        if (actionCallback && actionBtnText && actionBtn && actionBox) {
+            actionBtn.textContent = actionBtnText;
+            actionBtn.onclick = () => {
+                this.closeWarningModal();
+                actionCallback();
+            };
+            actionBox.style.display = 'block';
+        } else if (actionBox) {
+            actionBox.style.display = 'none';
+            if (actionBtn) actionBtn.onclick = null;
+        }
+
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeWarningModal() {
+        const modal = document.getElementById('warningModal');
+        if (modal) {
+            modal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    }
+
+    updateButtonStates() {
+        const hasVideo = !!this.state.videoFile;
+        const hasPhrases = this.state.phrases && this.state.phrases.length > 0;
+        const hasSourceText = hasPhrases && this.state.phrases.some(p => p.sourceText && p.sourceText.trim().length > 0);
+        const hasTargetText = hasPhrases && this.state.phrases.some(p => p.targetText && p.targetText.trim().length > 0);
+        const hasVoicedPhrases = hasPhrases && this.state.phrases.some(p => !!p.audioBlob);
+
+        // Transcription button (needs video)
+        const btnTranscribe = document.getElementById('btnStartTranscription');
+        if (btnTranscribe) {
+            btnTranscribe.classList.toggle('btn-needs-data', !hasVideo);
+        }
+
+        // Translation button (needs source text)
+        const btnTranslate = document.getElementById('btnStartTranslation');
+        if (btnTranslate) {
+            btnTranslate.classList.toggle('btn-needs-data', !hasSourceText);
+        }
+
+        // TTS button (needs translated text)
+        const btnTTS = document.getElementById('btnStartTTS');
+        if (btnTTS) {
+            btnTTS.classList.toggle('btn-needs-data', !hasTargetText);
+        }
+
+        // AutoRate button (needs phrases)
+        const btnAutoRate = document.getElementById('btnAutoRate');
+        if (btnAutoRate) {
+            btnAutoRate.classList.toggle('btn-needs-data', !hasPhrases);
+        }
+
+        // Export original text buttons (needs source text)
+        const btnExportOrigHeader = document.getElementById('btnExportOrigHeader');
+        const btnExportOrigFooter = document.getElementById('btnExportOrigFooter');
+        if (btnExportOrigHeader) btnExportOrigHeader.classList.toggle('btn-needs-data', !hasSourceText);
+        if (btnExportOrigFooter) btnExportOrigFooter.classList.toggle('btn-needs-data', !hasSourceText);
+
+        // Export translated text buttons (needs target text)
+        const btnExportTransHeader = document.getElementById('btnExportTransHeader');
+        const btnExportTransFooter = document.getElementById('btnExportTransFooter');
+        if (btnExportTransHeader) btnExportTransHeader.classList.toggle('btn-needs-data', !hasTargetText);
+        if (btnExportTransFooter) btnExportTransFooter.classList.toggle('btn-needs-data', !hasTargetText);
+
+        // Export individual audio zip buttons (needs synthesized audio clips)
+        const btnExportZipHeader = document.getElementById('btnExportZipHeader');
+        const btnExportZipFooter = document.getElementById('btnExportZipFooter');
+        if (btnExportZipHeader) btnExportZipHeader.classList.toggle('btn-needs-data', !hasVoicedPhrases);
+        if (btnExportZipFooter) btnExportZipFooter.classList.toggle('btn-needs-data', !hasVoicedPhrases);
+
+        // Next step button (needs phrases or video)
+        const btnGo2 = document.getElementById('btnGoToStep2');
+        if (btnGo2) {
+            btnGo2.disabled = false;
+            btnGo2.classList.toggle('btn-needs-data', !hasTargetText && !hasSourceText && !hasVideo);
+        }
     }
 
     canNavigateToStep(step) {
-        if (step === 1) return true;
-        if (step === 2) return Boolean(this.state.videoFile);
-        if (step === 3) return (this.state.phrases && this.state.phrases.some(p => p.sourceText && p.sourceText.trim().length > 0)) || Boolean(this.state.videoFile);
-        if (step === 4) return this.state.phrases && this.state.phrases.some(p => p.targetText && p.targetText.trim().length > 0);
-        if (step === 5) return this.state.phrases && this.state.phrases.length > 0;
-        return false;
+        return step === 1 || step === 2;
     }
 
     goToStep(step) {
         if (!this.canNavigateToStep(step)) return;
         this.state.currentStep = step;
-        for (let i = 1; i <= 5; i++) {
+        for (let i = 1; i <= 2; i++) {
             const nav = document.getElementById(`stepNav${i}`);
             const panel = document.getElementById(`panel${i}`);
 
@@ -187,8 +381,8 @@ class VoiceDubApp {
             }
         }
 
-        // Move phrases table container into current active panel for steps 2, 3, 4
-        if (step >= 2 && step <= 4) {
+        // Move phrases table container into current active panel for steps 1 and 2
+        if (step >= 1 && step <= 2) {
             const currentPanel = document.getElementById(`panel${step}`);
             const tableBox = document.getElementById('phrasesTableBox');
             if (currentPanel && tableBox) {
@@ -205,17 +399,16 @@ class VoiceDubApp {
             }
         }
 
-        if (step === 4) {
+        if (step === 2) {
             this.updateVoiceOptions('step3');
-        }
-
-        if (step === 5) {
-            this.runAssembly();
         }
     }
 
     log(stepNum, message, type = 'info') {
-        const logBox = document.getElementById(`logBox${stepNum}`);
+        let logBox = document.getElementById(`logBox${stepNum}`);
+        if (!logBox) {
+            logBox = document.getElementById('logBox4') || document.getElementById('logBox2');
+        }
         if (!logBox) return;
 
         logBox.style.display = 'flex';
@@ -259,6 +452,26 @@ class VoiceDubApp {
         if (btnNext) btnNext.disabled = false;
         if (nav1) nav1.classList.add('completed');
 
+        // Update Step 1 Status Banner
+        const banner = document.getElementById('videoStatusBanner');
+        const bannerIcon = document.getElementById('videoStatusIcon');
+        const bannerTitle = document.getElementById('videoStatusTitle');
+        const bannerSub = document.getElementById('videoStatusSub');
+        const bannerBtn = document.getElementById('btnOpenImportFromBanner');
+        const bannerBtnText = document.getElementById('bannerBtnText');
+        const bannerBtnIcon = document.getElementById('bannerBtnIcon');
+
+        if (banner) banner.classList.add('loaded');
+        if (bannerIcon) bannerIcon.textContent = '✅';
+        if (bannerTitle) bannerTitle.textContent = `${dict.videoLoadedTitle || 'Видео загружено:'} ${file.name}`;
+        if (bannerSub) bannerSub.textContent = `${(file.size / (1024 * 1024)).toFixed(1)} MB • ${dict.videoReadySub || 'Готово к извлечению аудио и транскрибации'}`;
+        if (bannerBtnText) {
+            bannerBtnText.textContent = (dict.changeVideoBtn || 'Сменить видео / текст').replace(/^[^\w\sа-яА-ЯёЁ]+/, '').trim();
+        } else if (bannerBtn) {
+            bannerBtn.textContent = dict.changeVideoBtn || '🔄 Сменить видео / сценарий';
+        }
+        if (bannerBtnIcon) bannerBtnIcon.innerHTML = '🔄';
+
         if (videoPreview) {
             if (videoPreview.src && videoPreview.src.startsWith('blob:')) {
                 URL.revokeObjectURL(videoPreview.src);
@@ -269,8 +482,11 @@ class VoiceDubApp {
                     const totalSecs = videoPreview.duration;
                     const mins = Math.floor(totalSecs / 60);
                     const secs = Math.floor(totalSecs % 60);
-                    document.getElementById('specDuration').textContent =
-                        mins > 0 ? `${mins} ${dict.minsLabel} ${secs} ${dict.secsLabel}` : `${totalSecs.toFixed(1)} ${dict.secsLabel}`;
+                    const formattedDuration = mins > 0 ? `${mins} ${dict.minsLabel} ${secs} ${dict.secsLabel}` : `${totalSecs.toFixed(1)} ${dict.secsLabel}`;
+                    document.getElementById('specDuration').textContent = formattedDuration;
+                    if (bannerSub) {
+                        bannerSub.textContent = `${(file.size / (1024 * 1024)).toFixed(1)} MB • ${formattedDuration} • ${dict.videoReadySub || 'Готово к извлечению аудио и транскрибации'}`;
+                    }
                 }
                 if (videoPreview.videoWidth && videoPreview.videoHeight) {
                     document.getElementById('specResolution').textContent = `${videoPreview.videoWidth}x${videoPreview.videoHeight}`;
@@ -306,6 +522,7 @@ class VoiceDubApp {
         localStorage.setItem('ui_lang', lang);
         this.updateUiLanguage();
         this.renderPhrasesTable();
+        this.updateButtonStates();
     }
 
     updateUiLanguage() {
@@ -327,6 +544,13 @@ class VoiceDubApp {
             const key = el.getAttribute('data-i18n-placeholder');
             if (dict[key]) {
                 el.placeholder = dict[key];
+            }
+        });
+
+        document.querySelectorAll('[data-i18n-title]').forEach(el => {
+            const key = el.getAttribute('data-i18n-title');
+            if (dict[key]) {
+                el.title = dict[key];
             }
         });
 
@@ -358,28 +582,75 @@ class VoiceDubApp {
         if (selectedFileNameDisplay && this.state.videoFile) {
             selectedFileNameDisplay.textContent = `${dict.logSelectedFile} ${this.state.videoFile.name}`;
         }
+
+        // Update Video Status Banner according to loaded state
+        const banner = document.getElementById('videoStatusBanner');
+        const bannerIcon = document.getElementById('videoStatusIcon');
+        const bannerTitle = document.getElementById('videoStatusTitle');
+        const bannerSub = document.getElementById('videoStatusSub');
+        const bannerBtn = document.getElementById('btnOpenImportFromBanner');
+        const bannerBtnText = document.getElementById('bannerBtnText');
+        const bannerBtnIcon = document.getElementById('bannerBtnIcon');
+
+        if (this.state.videoFile) {
+            if (banner) banner.classList.add('loaded');
+            if (bannerIcon) bannerIcon.textContent = '✅';
+            if (bannerTitle) bannerTitle.textContent = `${dict.videoLoadedTitle || 'Видео загружено:'} ${this.state.videoFile.name}`;
+            if (bannerSub) bannerSub.textContent = `${(this.state.videoFile.size / (1024 * 1024)).toFixed(1)} MB • ${dict.videoReadySub || 'Готово к извлечению аудио и транскрибации'}`;
+            if (bannerBtnText) {
+                bannerBtnText.textContent = (dict.changeVideoBtn || 'Сменить видео / текст').replace(/^[^\w\sа-яА-ЯёЁ]+/, '').trim();
+            } else if (bannerBtn) {
+                bannerBtn.textContent = dict.changeVideoBtn || '🔄 Сменить видео / сценарий';
+            }
+            if (bannerBtnIcon) bannerBtnIcon.innerHTML = '🔄';
+        } else {
+            if (banner) banner.classList.remove('loaded');
+            if (bannerIcon) bannerIcon.textContent = '🎬';
+            if (bannerTitle) bannerTitle.textContent = dict.noVideoTitle;
+            if (bannerSub) bannerSub.textContent = dict.noVideoSub;
+            if (bannerBtnText) {
+                bannerBtnText.textContent = (dict.openImportBtn || 'Импорт').replace(/^[^\w\sа-яА-ЯёЁ]+/, '').trim();
+            } else if (bannerBtn) {
+                bannerBtn.textContent = dict.openImportBtn || '📥 Импорт';
+            }
+            if (bannerBtnIcon) {
+                bannerBtnIcon.innerHTML = `<svg class="import-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+            }
+        }
     }
 
     checkApiKey() {
         const key = (this.state.apiKey || '').trim();
         if (!key) {
             const dict = I18N[this.state.uiLang] || I18N.en;
-            alert(dict.enterApiKeyAlert);
-            const input = document.getElementById('apiKeyInput');
-            if (input) {
-                input.focus();
-                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+            this.showWarning(
+                dict.enterApiKeyAlert,
+                () => {
+                    const input = document.getElementById('apiKeyInput');
+                    if (input) {
+                        input.focus();
+                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                },
+                '🔑 API Key'
+            );
             return false;
         }
         return true;
     }
 
     async runTranscription() {
-        if (!this.state.videoFile) return;
+        const dict = I18N[this.state.uiLang] || I18N.en;
+        if (!this.state.videoFile) {
+            this.showWarning(
+                dict.noVideoForTranscriptionWarning,
+                () => this.openImportModal(),
+                dict.openImportBtn || '📥 Импорт'
+            );
+            return;
+        }
         if (!this.checkApiKey()) return;
 
-        const dict = I18N[this.state.uiLang] || I18N.en;
         const btn = document.getElementById('btnStartTranscription');
         btn.disabled = true;
 
@@ -395,8 +666,8 @@ class VoiceDubApp {
             this.state.phrases = await Transcriber.transcribeChunks(chunks, sourceLang, this.state.apiKey, (msg) => this.log(2, msg, 'info'), this.state.uiLang);
 
             this.renderPhrasesTable();
-            document.getElementById('btnGoToStep3').disabled = false;
-            document.getElementById('stepNav2').classList.add('completed');
+            this.updateButtonStates();
+            document.getElementById('stepNav1')?.classList.add('completed');
         } catch (err) {
             this.log(2, `${dict.logTranscriptionFailed} ${err.message}`, 'error');
         } finally {
@@ -442,10 +713,28 @@ class VoiceDubApp {
     }
 
     async runTranslation() {
-        if (!this.state.phrases || this.state.phrases.length === 0) return;
+        const dict = I18N[this.state.uiLang] || I18N.en;
+        if (!this.state.phrases || this.state.phrases.length === 0) {
+            this.showWarning(
+                dict.noPhrasesForTranslationWarning,
+                () => this.openImportModal(),
+                dict.openImportBtn || '📥 Импорт'
+            );
+            return;
+        }
+
+        const hasSourceText = this.state.phrases.some(p => p.sourceText && p.sourceText.trim().length > 0);
+        if (!hasSourceText) {
+            this.showWarning(
+                dict.noSourceTextForTranslationWarning,
+                () => this.openImportModal(),
+                dict.openImportBtn || '📥 Импорт'
+            );
+            return;
+        }
+
         if (!this.checkApiKey()) return;
 
-        const dict = I18N[this.state.uiLang] || I18N.en;
         const btn = document.getElementById('btnStartTranslation');
         btn.disabled = true;
 
@@ -464,8 +753,8 @@ class VoiceDubApp {
 
             this.updateVoiceOptions('step3');
             this.renderPhrasesTable();
-            document.getElementById('btnGoToStep4').disabled = false;
-            document.getElementById('stepNav3').classList.add('completed');
+            this.updateButtonStates();
+            document.getElementById('stepNav1')?.classList.add('completed');
         } catch (err) {
             this.log(3, `${dict.logTranslationFailed} ${err.message}`, 'error');
         } finally {
@@ -473,10 +762,84 @@ class VoiceDubApp {
         }
     }
 
-    async runTTS() {
-        if (!this.state.phrases || this.state.phrases.length === 0) return;
+    async translateSinglePhrase(phraseId, btnElement = null) {
+        if (!this.checkApiKey()) return;
 
         const dict = I18N[this.state.uiLang] || I18N.en;
+        const phrase = this.state.phrases.find(p => p.id === phraseId);
+        if (!phrase) return;
+
+        const text = (phrase.sourceText || '').trim();
+        if (!text) {
+            this.showWarning(dict.emptyRowSourceAlert || dict.emptyPhraseAlert || 'Исходный текст этой фразы пуст!');
+            return;
+        }
+
+        const targetLang = document.getElementById('targetLangSelect')?.value || 'Русский';
+        const sourceLang = document.getElementById('sourceLangSelect')?.value || 'Армянский';
+
+        if (btnElement) {
+            btnElement.disabled = true;
+            btnElement.classList.add('loading');
+        }
+
+        const phraseNum = this.state.phrases.indexOf(phrase) + 1;
+        this.log(3, `${dict.translatingRow || '🌐 Перевод фразы #'} ${phraseNum}: "${text.substring(0, 35)}..."`, 'info');
+
+        try {
+            const translatedText = await Translator.translateSinglePhrase(
+                phrase,
+                this.state.phrases,
+                targetLang,
+                sourceLang,
+                this.state.apiKey,
+                (msg) => this.log(3, msg, 'info'),
+                this.state.uiLang
+            );
+
+            phrase.targetText = translatedText;
+
+            // Update target text cell directly in DOM to avoid losing user selection/scroll
+            const targetCell = document.querySelector(`.cell-editable[data-field="targetText"][data-id="${phrase.id}"]`);
+            if (targetCell) {
+                targetCell.innerText = translatedText;
+            }
+
+            this.updateButtonStates();
+            document.getElementById('stepNav1')?.classList.add('completed');
+
+            this.log(3, `✅ ${dict.translatedRowSuccess || 'Фраза успешно переведена!'} (#${phraseNum})`, 'success');
+        } catch (err) {
+            this.log(3, `❌ ${dict.logTranslationFailed || 'Ошибка перевода:'} ${err.message}`, 'error');
+        } finally {
+            if (btnElement) {
+                btnElement.disabled = false;
+                btnElement.classList.remove('loading');
+            }
+        }
+    }
+
+    async runTTS() {
+        const dict = I18N[this.state.uiLang] || I18N.en;
+        if (!this.state.phrases || this.state.phrases.length === 0) {
+            this.showWarning(
+                dict.noPhrasesForTtsWarning,
+                () => this.goToStep(1),
+                dict.backToScriptBtn || '⬅️ Назад к тексту'
+            );
+            return;
+        }
+
+        const hasTargetText = this.state.phrases.some(p => p.targetText && p.targetText.trim().length > 0);
+        if (!hasTargetText) {
+            this.showWarning(
+                dict.noTargetTextForTtsWarning,
+                () => this.goToStep(1),
+                dict.startTranslationBtn || '🌐 Перевести фразы'
+            );
+            return;
+        }
+
         const btn = document.getElementById('btnStartTTS');
         btn.disabled = true;
 
@@ -490,12 +853,8 @@ class VoiceDubApp {
             );
 
             this.renderPhrasesTable();
-
-            this.log(4, dict.logAutoAssembly, 'info');
-            await this.runAssembly();
-
-            document.getElementById('btnGoToStep5').disabled = false;
-            document.getElementById('stepNav4').classList.add('completed');
+            this.updateButtonStates();
+            document.getElementById('stepNav2')?.classList.add('completed');
         } catch (err) {
             this.log(4, `${dict.logTtsFailed} ${err.message}`, 'error');
         } finally {
@@ -533,8 +892,15 @@ class VoiceDubApp {
     }
 
     autoCalculateAllRates() {
-        if (!this.state.phrases || this.state.phrases.length === 0) return;
         const dict = I18N[this.state.uiLang] || I18N.en;
+        if (!this.state.phrases || this.state.phrases.length === 0) {
+            this.showWarning(
+                dict.noPhrasesForAutoRateWarning,
+                () => this.goToStep(1),
+                dict.backToScriptBtn || '⬅️ Назад к тексту'
+            );
+            return;
+        }
         let adjustedCount = 0;
         this.state.phrases.forEach(phrase => {
             const optimal = this.calculateOptimalRate(phrase);
@@ -545,27 +911,132 @@ class VoiceDubApp {
         this.log(4, `${dict.logAutoRateCalculated} ${adjustedCount}/${this.state.phrases.length}`, 'info');
     }
 
+    addPhrase(insertIndex = null) {
+        const targetLang = document.getElementById('targetLangSelect')?.value || 'Русский';
+        const voices = CONFIG.VOICES[targetLang] || CONFIG.VOICES["Русский"];
+        const defaultVoice = document.getElementById('voiceSelect')?.value || Object.values(voices)[0];
+
+        let prevEnd = "00:00";
+        let prevEndSec = 0;
+
+        const count = this.state.phrases.length;
+        const targetIdx = (insertIndex !== null && insertIndex >= 0 && insertIndex <= count) 
+            ? insertIndex 
+            : count;
+
+        if (targetIdx > 0 && this.state.phrases[targetIdx - 1]) {
+            const prev = this.state.phrases[targetIdx - 1];
+            prevEnd = prev.end || "00:00";
+            prevEndSec = (prev.endSec !== undefined && !isNaN(prev.endSec)) 
+                ? prev.endSec 
+                : Transcriber.toSeconds(prevEnd);
+        }
+
+        const newEndSec = prevEndSec + 4;
+        const newEnd = Transcriber.toTimestamp(newEndSec);
+
+        const newPhrase = {
+            id: targetIdx,
+            start: prevEnd,
+            end: newEnd,
+            startSec: prevEndSec,
+            endSec: newEndSec,
+            sourceText: "",
+            targetText: "",
+            voice: defaultVoice,
+            rate: "+0%",
+            pitch: "+0Hz",
+            audioUrl: null,
+            audioBlob: null
+        };
+
+        this.state.phrases.splice(targetIdx, 0, newPhrase);
+        this.state.phrases.forEach((p, idx) => { p.id = idx; });
+        this.renderPhrasesTable();
+
+        // Focus the newly added row's sourceText cell
+        setTimeout(() => {
+            const newCell = document.querySelector(`.cell-editable[data-field="sourceText"][data-id="${targetIdx}"]`);
+            if (newCell) {
+                newCell.focus();
+            }
+        }, 50);
+    }
+
+    deletePhrase(index) {
+        if (index < 0 || index >= this.state.phrases.length) return;
+        const dict = I18N[this.state.uiLang] || I18N.en;
+        const phraseNum = index + 1;
+        const confirmMsg = dict.confirmDeleteRow 
+            ? `${dict.confirmDeleteRow} #${phraseNum}?` 
+            : `Вы уверены, что хотите удалить строку #${phraseNum}?`;
+
+        if (!confirm(confirmMsg)) return;
+
+        this.state.phrases.splice(index, 1);
+        this.state.phrases.forEach((p, idx) => { p.id = idx; });
+        this.renderPhrasesTable();
+        this.updateButtonStates();
+    }
+
     renderPhrasesTable() {
         const dict = I18N[this.state.uiLang] || I18N.en;
         const box = document.getElementById('phrasesTableBox');
         const tbody = document.getElementById('phrasesTableBody');
+        const countBadge = document.getElementById('phrasesCountBadge');
         if (!box || !tbody) return;
 
         box.style.display = 'block';
         tbody.innerHTML = '';
 
-        const isStep4 = this.state.currentStep === 4;
+        if (countBadge) {
+            countBadge.textContent = `${this.state.phrases.length} ${dict.phrasesCountLabel || 'фраз'}`;
+        }
+
+        const footerBar = box.querySelector('.table-footer-bar');
+        if (footerBar) {
+            footerBar.style.display = 'flex';
+        }
+
+        const isVoiceoverStep = this.state.currentStep === 2;
         const thVoice = document.querySelector('.col-voice');
         if (thVoice) {
-            thVoice.style.display = isStep4 ? '' : 'none';
+            thVoice.style.display = isVoiceoverStep ? '' : 'none';
         }
         const thRate = document.querySelector('.col-rate');
         if (thRate) {
-            thRate.style.display = isStep4 ? '' : 'none';
+            thRate.style.display = isVoiceoverStep ? '' : 'none';
         }
         const thPitch = document.querySelector('.col-pitch');
         if (thPitch) {
-            thPitch.style.display = isStep4 ? '' : 'none';
+            thPitch.style.display = isVoiceoverStep ? '' : 'none';
+        }
+
+        const groupStep1 = document.querySelector('.toolbar-group-step1');
+        const groupStep2 = document.querySelector('.toolbar-group-step2');
+        if (groupStep1) {
+            groupStep1.style.display = isVoiceoverStep ? 'none' : 'flex';
+        }
+        if (groupStep2) {
+            groupStep2.style.display = isVoiceoverStep ? 'flex' : 'none';
+        }
+
+
+
+        if (this.state.phrases.length === 0) {
+            const emptyTr = document.createElement('tr');
+            emptyTr.innerHTML = `
+                <td colspan="10" style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+                    <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📝</div>
+                    <div style="font-size: 0.95rem; margin-bottom: 0.75rem;">${dict.emptyTableMessage}</div>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnEmptyAddRow" style="display: inline-flex;">
+                        ${dict.addRowBtn}
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(emptyTr);
+            document.getElementById('btnEmptyAddRow')?.addEventListener('click', () => this.addPhrase());
+            return;
         }
 
         const targetLang = document.getElementById('targetLangSelect')?.value || 'Русский';
@@ -613,26 +1084,37 @@ class VoiceDubApp {
             }
 
             tr.innerHTML = `
-                <td style="color: var(--text-dim);">${idx + 1}</td>
-                <td class="cell-time">${phrase.start}</td>
-                <td class="cell-time">${phrase.end}</td>
-                <td class="cell-editable" contenteditable="true" data-field="sourceText" data-id="${phrase.id}">
-                    ${phrase.sourceText || ''}
+                <td style="color: var(--text-dim); text-align: center; font-weight: 600;">${idx + 1}</td>
+                <td class="cell-time cell-editable" contenteditable="true" data-field="start" data-id="${phrase.id}" title="Формат: MM:SS">
+                    ${phrase.start || '00:00'}
+                </td>
+                <td class="cell-time cell-editable" contenteditable="true" data-field="end" data-id="${phrase.id}" title="Формат: MM:SS">
+                    ${phrase.end || '00:04'}
+                </td>
+                <td class="cell-source" style="vertical-align: middle;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%;">
+                        <div class="cell-editable" contenteditable="true" data-field="sourceText" data-id="${phrase.id}" style="flex: 1; outline: none; min-height: 1.5rem;">
+                            ${phrase.sourceText || ''}
+                        </div>
+                        <button type="button" class="btn-translate-row" data-id="${phrase.id}" title="${dict.translateRowTooltip || 'Перевести эту строку (Gemini)'}">
+                            🌐
+                        </button>
+                    </div>
                 </td>
                 <td class="cell-editable" contenteditable="true" data-field="targetText" data-id="${phrase.id}">
                     ${phrase.targetText || ''}
                 </td>
-                <td class="col-voice" style="${isStep4 ? '' : 'display: none;'}">
+                <td class="col-voice" style="${isVoiceoverStep ? '' : 'display: none;'}">
                     <select class="form-select select-phrase-voice" data-id="${phrase.id}" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; width: 100%;">
                         ${voiceOptionsHtml}
                     </select>
                 </td>
-                <td class="col-rate" style="${isStep4 ? '' : 'display: none;'}">
+                <td class="col-rate" style="${isVoiceoverStep ? '' : 'display: none;'}">
                     <select class="form-select select-phrase-rate" data-id="${phrase.id}" style="padding: 0.25rem 0.3rem; font-size: 0.8rem; width: 100%;">
                         ${rateOptionsHtml}
                     </select>
                 </td>
-                <td class="col-pitch" style="${isStep4 ? '' : 'display: none;'}">
+                <td class="col-pitch" style="${isVoiceoverStep ? '' : 'display: none;'}">
                     <select class="form-select select-phrase-pitch" data-id="${phrase.id}" style="padding: 0.25rem 0.3rem; font-size: 0.8rem; width: 100%;">
                         ${pitchOptionsHtml}
                     </select>
@@ -640,14 +1122,48 @@ class VoiceDubApp {
                 <td style="text-align: center; white-space: nowrap;">
                     ${phrase.audioUrl ? `<button class="btn-play-mini btn-play-audio" data-url="${phrase.audioUrl}" title="${dict.playTooltip}">▶️</button>` : ''}
                     ${phrase.audioUrl ? `<button class="btn-play-mini btn-download-single-audio" data-id="${phrase.id}" title="${dict.downloadSingleAudioTooltip}">⬇️</button>` : ''}
-                    ${isStep4 ? `<button class="btn-play-mini btn-re-tts" data-id="${phrase.id}" title="${dict.reTtsTooltip}">🔄</button>` : ''}
+                    ${isVoiceoverStep ? `<button class="btn-play-mini btn-re-tts" data-id="${phrase.id}" title="${dict.reTtsTooltip}">🔄</button>` : ''}
+                </td>
+                <td style="text-align: center; white-space: nowrap;">
+                    <div style="display: flex; gap: 0.35rem; justify-content: center; align-items: center;">
+                        <button type="button" class="btn-table-action btn-insert-row" data-idx="${idx}" title="${dict.insertRowBelowTooltip || 'Вставить строку ниже'}">
+                            ➕
+                        </button>
+                        <button type="button" class="btn-table-action btn-delete-row" data-idx="${idx}" title="${dict.deleteRowTooltip || 'Удалить строку'}">
+                            🗑️
+                        </button>
+                    </div>
                 </td>
             `;
 
             tbody.appendChild(tr);
         });
 
-        // Add inline edit listeners
+        // Add single-phrase translate listeners (🌐 per row)
+        tbody.querySelectorAll('.btn-translate-row').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(e.currentTarget.getAttribute('data-id'));
+                this.translateSinglePhrase(id, e.currentTarget);
+            });
+        });
+
+        // Add row insert listeners (➕ per row)
+        tbody.querySelectorAll('.btn-insert-row').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+                this.addPhrase(idx + 1);
+            });
+        });
+
+        // Add row delete listeners (🗑️ per row)
+        tbody.querySelectorAll('.btn-delete-row').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+                this.deletePhrase(idx);
+            });
+        });
+
+        // Inline edit listeners
         tbody.querySelectorAll('.cell-editable').forEach(cell => {
             cell.addEventListener('input', (e) => {
                 const id = parseInt(e.target.getAttribute('data-id'));
@@ -655,6 +1171,14 @@ class VoiceDubApp {
                 const phrase = this.state.phrases.find(p => p.id === id);
                 if (phrase) {
                     phrase[field] = e.target.innerText.trim();
+                    if (field === 'start') {
+                        phrase.startSec = Transcriber.toSeconds(phrase.start);
+                    } else if (field === 'end') {
+                        phrase.endSec = Transcriber.toSeconds(phrase.end);
+                    }
+                    if (field === 'sourceText' || field === 'targetText') {
+                        this.updateButtonStates();
+                    }
                 }
             });
         });
@@ -731,13 +1255,15 @@ class VoiceDubApp {
                 }
             });
         });
+
+        this.updateButtonStates();
     }
 
     async synthesizeSinglePhrase(phrase) {
         const dict = I18N[this.state.uiLang] || I18N.en;
         const text = (phrase.targetText || phrase.sourceText || '').trim();
         if (!text) {
-            alert(dict.emptyPhraseAlert);
+            this.showWarning(dict.emptyPhraseAlert);
             return;
         }
 
@@ -757,9 +1283,6 @@ class VoiceDubApp {
 
             this.renderPhrasesTable();
             this.log(4, `${dict.logPhraseSuccess}${phrase.id + 1} ${dict.logPhraseSuccessSuffix}`, 'success');
-
-            // Auto-update final audio mix
-            await this.runAssembly();
         } catch (err) {
             this.log(4, `${dict.logPhraseError}${phrase.id + 1}: ${err.message}`, 'error');
         }
@@ -795,7 +1318,6 @@ class VoiceDubApp {
             if (btnDownloadAudio) {
                 btnDownloadAudio.style.display = 'inline-flex';
             }
-            document.getElementById('stepNav5').classList.add('completed');
             this.log(5, dict.logAssemblyCompleted, 'success');
         } catch (err) {
             this.log(5, `${dict.logAssemblyFailed} ${err.message}`, 'error');
@@ -932,21 +1454,13 @@ class VoiceDubApp {
 
                 this.log(1, `${dict.logImportSuccess} ${label} (${importedPhrases.length}) - ${file.name}`, 'success');
 
-                if (this.state.videoFile) {
-                    document.getElementById('stepNav2')?.classList.add('completed');
-                    document.getElementById('btnGoToStep2').disabled = false;
-                } else {
-                    document.getElementById('stepNav2')?.classList.remove('completed');
-                    document.getElementById('btnGoToStep2').disabled = true;
-                }
-
-                if (targetField === 'sourceText' || this.state.phrases.some(p => p.sourceText)) {
-                    document.getElementById('btnGoToStep3').disabled = false;
+                const hasText = this.state.phrases.some(p => (p.targetText && p.targetText.trim().length > 0) || (p.sourceText && p.sourceText.trim().length > 0));
+                if (hasText || this.state.videoFile) {
+                    document.getElementById('stepNav1')?.classList.add('completed');
+                    const btnGo2 = document.getElementById('btnGoToStep2');
+                    if (btnGo2) btnGo2.disabled = false;
                 }
                 if (targetField === 'targetText' || this.state.phrases.some(p => p.targetText)) {
-                    document.getElementById('stepNav3')?.classList.add('completed');
-                    document.getElementById('btnGoToStep4').disabled = false;
-                    document.getElementById('btnGoToStep5').disabled = false;
                     this.log(1, dict.translationLoadedInfo, 'info');
                 }
 
@@ -976,7 +1490,14 @@ class VoiceDubApp {
         const dict = I18N[this.state.uiLang] || I18N.en;
         const hasVoicedPhrases = this.state.phrases && this.state.phrases.some(p => p.audioBlob);
         if (!this.state.mixedAudioBlob || !hasVoicedPhrases) {
-            alert(dict.missingAudioBlobAlert);
+            this.showWarning(
+                dict.missingAudioBlobAlert,
+                () => {
+                    if (this.state.currentStep !== 2) this.goToStep(2);
+                    this.runTTS();
+                },
+                dict.startTTSBtn || '🎙️ Озвучить все фразы'
+            );
             return;
         }
 
@@ -995,16 +1516,31 @@ class VoiceDubApp {
     exportText(field, format) {
         const dict = I18N[this.state.uiLang] || I18N.en;
         if (!this.state.phrases || this.state.phrases.length === 0) {
-            alert(dict.noPhrasesAlert);
+            this.showWarning(
+                dict.noPhrasesAlert,
+                () => this.openImportModal(),
+                dict.openImportBtn || '📥 Импорт'
+            );
             return;
         }
 
         const available = this.state.phrases.filter(p => p[field] && p[field].trim().length > 0);
         if (available.length === 0) {
             if (field === 'sourceText') {
-                alert(dict.missingOrigTextAlert);
+                this.showWarning(
+                    dict.missingOrigTextAlert,
+                    () => this.openImportModal(),
+                    dict.openImportBtn || '📥 Импорт'
+                );
             } else {
-                alert(dict.missingTransTextAlert);
+                this.showWarning(
+                    dict.missingTransTextAlert,
+                    () => {
+                        if (this.state.currentStep !== 1) this.goToStep(1);
+                        this.runTranslation();
+                    },
+                    dict.startTranslationBtn || '🌐 Перевести текст'
+                );
             }
             return;
         }
@@ -1058,11 +1594,19 @@ class VoiceDubApp {
         const dict = I18N[this.state.uiLang] || I18N.en;
         const voicedPhrases = this.state.phrases.filter(p => p.audioBlob);
         if (voicedPhrases.length === 0) {
-            alert(dict.missingIndividualAudioAlert);
+            this.showWarning(
+                dict.missingIndividualAudioAlert,
+                () => {
+                    if (this.state.currentStep !== 2) this.goToStep(2);
+                    this.runTTS();
+                },
+                dict.startTTSBtn || '🎙️ Озвучить все фразы'
+            );
             return;
         }
 
-        this.log(5, dict.logPackingZip, 'info');
+        const logStep = this.state.currentStep === 2 ? 4 : 2;
+        this.log(logStep, dict.logPackingZip, 'info');
 
         try {
             const filesToZip = [];
@@ -1092,17 +1636,21 @@ class VoiceDubApp {
             a.click();
             document.body.removeChild(a);
 
-            this.log(5, dict.logZipSuccess, 'success');
+            this.log(logStep, dict.logZipSuccess, 'success');
         } catch (err) {
-            this.log(5, `❌ ZIP Error: ${err.message}`, 'error');
+            this.log(logStep, `❌ ZIP Error: ${err.message}`, 'error');
         }
     }
 }
 
 // Initialize application reliably for ES modules
 function initApp() {
-    if (!window.app) {
-        window.app = new VoiceDubApp();
+    try {
+        if (!window.app) {
+            window.app = new VoiceDubApp();
+        }
+    } catch (err) {
+        console.error('Fatal initialization error in VoiceDubApp:', err);
     }
 }
 if (document.readyState === 'loading') {

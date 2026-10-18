@@ -148,4 +148,108 @@ export class Translator {
             : `✅ Translation completed! Total phrases: ${total}`);
         return phrases;
     }
+
+    /**
+     * Translates a single phrase to target language using Gemini API with dialogue context.
+     * @param {Object} phrase 
+     * @param {Array<Object>} allPhrases 
+     * @param {string} targetLang 
+     * @param {string} sourceLangKey 
+     * @param {string} apiKey 
+     * @param {function(string):void} progressCb 
+     * @param {string} uiLang 
+     * @returns {Promise<string>}
+     */
+    static async translateSinglePhrase(phrase, allPhrases = [], targetLang = "Русский", sourceLangKey = "Армянский", apiKey = CONFIG.DEFAULT_API_KEY, progressCb = console.log, uiLang = 'en') {
+        if (!phrase || !phrase.sourceText || !phrase.sourceText.trim()) {
+            return "";
+        }
+
+        const langName = CONFIG.LANG_NAMES[targetLang] || targetLang;
+        const sourceLangName = CONFIG.SOURCE_LANGS[sourceLangKey]?.prompt_lang || "Armenian";
+        const modelId = CONFIG.MODEL_ID;
+
+        const systemInstruction = {
+            parts: [{
+                text: "You are an elite, highly accurate film, documentary, and dialogue localization translator for audio/video dubbing.\n" +
+                      "Your task is to produce strictly faithful, precise, and contextually accurate translations while preserving the exact meaning, speaker tone, grammatical gender, idioms, terminology, numbers, and natural speech rhythm.\n\n" +
+                      "CRITICAL RULES:\n" +
+                      "1. ACCURACY & FIDELITY: Never omit, invent, summarize, or hallucinate content. Translate the phrase accurately.\n" +
+                      "2. CONTEXTUAL COHERENCE: Maintain consistent gender (masculine/feminine), pronouns, honorifics (formal/informal), and narrative continuity.\n" +
+                      "3. DUBBING FIT: Ensure spoken naturalness and suitable sentence cadence for speech synthesis.\n" +
+                      "4. SCRIPT & ORTHOGRAPHY: Output purely in the native script of the target language (e.g. Cyrillic for Russian, Arabic script for Egyptian/Persian, Latin for English/Spanish). Never transliterate.\n" +
+                      "5. OUTPUT FORMAT: Output ONLY a JSON array of strings containing exactly 1 string: the translated text."
+            }]
+        };
+
+        const phraseIdx = allPhrases.findIndex(p => p.id === phrase.id);
+        let contextHeader = "";
+        if (phraseIdx > 0) {
+            const prevPhrases = allPhrases.slice(Math.max(0, phraseIdx - 3), phraseIdx);
+            contextHeader += "--- PREVIOUS DIALOGUE CONTEXT (for continuity reference only, DO NOT re-translate) ---\n";
+            prevPhrases.forEach(p => {
+                contextHeader += `[Source: "${p.sourceText}"] -> [Translated: "${p.targetText || ''}"]\n`;
+            });
+            contextHeader += "\n";
+        }
+
+        if (phraseIdx >= 0 && phraseIdx < allPhrases.length - 1) {
+            const nextPhrases = allPhrases.slice(phraseIdx + 1, Math.min(allPhrases.length, phraseIdx + 3));
+            contextHeader += "--- UPCOMING DIALOGUE (for context reference if sentences continue) ---\n";
+            nextPhrases.forEach(p => {
+                contextHeader += `[Upcoming: "${p.sourceText}"]\n`;
+            });
+            contextHeader += "\n";
+        }
+
+        const prompt = 
+            `${contextHeader}` +
+            `--- PHRASE TO TRANSLATE (1 item from ${sourceLangName} to ${langName}) ---\n` +
+            `Return ONLY a JSON array with exactly 1 string containing the translation for this phrase:\n\n` +
+            `${JSON.stringify([phrase.sourceText], null, 2)}`;
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+
+        const requestBody = {
+            systemInstruction: systemInstruction,
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.1,
+                topP: 0.95
+            }
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errText}`);
+        }
+
+        const jsonRes = await response.json();
+        let rawContent = jsonRes.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!rawContent) {
+            throw new Error("Empty response from Gemini API");
+        }
+
+        rawContent = rawContent.trim();
+        if (rawContent.startsWith('```')) {
+            rawContent = rawContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+        }
+
+        const result = JSON.parse(rawContent);
+        if (Array.isArray(result) && result.length > 0) {
+            return result[0];
+        } else if (typeof result === 'string') {
+            return result;
+        }
+
+        throw new Error("Invalid translation response format");
+    }
 }
