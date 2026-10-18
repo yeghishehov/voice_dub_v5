@@ -90,7 +90,7 @@
                     <h3 class="upload-title" data-i18n="dropVideoTitle">Выберите файл Видео / Аудио</h3>
                     <p class="upload-desc" data-i18n="stage1Desc">Загрузите исходное видео/аудио или сразу импортируйте готовый текст оригинала/перевода для пропуска этапов.</p>
 
-                    <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                    <div class="import-buttons-row" style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
                         <label for="videoFileInput" class="btn btn-primary" id="btnSelectFile"
                             style="cursor: pointer; padding: 0.85rem 1.75rem; font-size: 1rem;" data-i18n="selectVideoBtn">
                             🎬 Выбрать видеофайл на компьютере
@@ -225,7 +225,7 @@
                 Распознавайте речь с таймкодами из видео и переводите фразы через Gemini Flash. Редактируйте текст прямо в таблице.
             </p>
 
-            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <div class="stage-actions-row" style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
                 <button class="btn btn-primary" id="btnStartTranscription" data-i18n="startTranscriptionBtn">
                     ⚡ Начать транскрибацию (Gemini)
                 </button>
@@ -294,7 +294,7 @@
                         </button>
                     </div>
                 </div>
-                <div style="overflow-x: auto;">
+                <div class="phrases-table-scroll" style="overflow-x: auto;">
                     <table class="phrases-table">
                         <thead>
                             <tr>
@@ -365,7 +365,7 @@
                 </div>
             </div>
 
-            <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+            <div class="step-nav-bottom-actions" style="margin-top: 2rem; display: flex; justify-content: flex-end;">
                 <button class="btn btn-primary" id="btnGoToStep2" data-i18n="nextVoiceoverBtn">
                     Далее: Озвучка ➡️
                 </button>
@@ -378,7 +378,7 @@
                 Синтез речи выполняется нейросетевыми голосами Microsoft Edge TTS. Прослушивайте каждую фразу в таблице.
             </p>
 
-            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <div class="stage-actions-row" style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
                 <button class="btn btn-primary" id="btnStartTTS" data-i18n="startTTSBtn">
                     🎙️ Озвучить все фразы (Edge TTS)
                 </button>
@@ -389,7 +389,7 @@
 
             <div class="log-box" id="logBox4" style="display: none;"></div>
 
-            <div style="margin-top: 2rem; display: flex; justify-content: flex-start;">
+            <div class="step-nav-bottom-actions" style="margin-top: 2rem; display: flex; justify-content: flex-start;">
                 <button class="btn btn-secondary" id="btnBackToStep1" data-i18n="backToScriptBtn">⬅️ Назад к тексту</button>
             </div>
         </section>
